@@ -61,6 +61,7 @@ model SOSAlert {
   status    String   @default("ACTIVE")
   latitude  Float?
   longitude Float?
+  accuracy  Float?
   createdAt DateTime @default(now())
 
   @@index([userId, createdAt(sort: Desc)])

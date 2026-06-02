@@ -11,6 +11,8 @@ export type TriggerSosState = {
   error?: string;
 };
 
+const SOS_STATUS_ACTIVE = "ACTIVE";
+
 function toNullable(value: FormDataEntryValue | null) {
   if (typeof value !== "string") {
     return null;
@@ -27,6 +29,14 @@ function parseNullableFloat(value: string | null) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function isValidLatitude(value: number | null) {
+  return value === null || (value >= -90 && value <= 90);
+}
+
+function isValidLongitude(value: number | null) {
+  return value === null || (value >= -180 && value <= 180);
+}
+
 export async function triggerSOSAction(
   _prevState: TriggerSosState,
   formData: FormData,
@@ -37,14 +47,23 @@ export async function triggerSOSAction(
     const message = toNullable(formData.get("message"));
     const latitude = parseNullableFloat(toNullable(formData.get("latitude")));
     const longitude = parseNullableFloat(toNullable(formData.get("longitude")));
+    const accuracy = parseNullableFloat(toNullable(formData.get("accuracy")));
+
+    if (!isValidLatitude(latitude) || !isValidLongitude(longitude)) {
+      return {
+        success: false,
+        error: "Invalid location coordinates received.",
+      };
+    }
 
     await prisma.sOSAlert.create({
       data: {
         userId,
         message,
-        status: "ACTIVE",
+        status: SOS_STATUS_ACTIVE,
         latitude,
         longitude,
+        accuracy,
       },
     });
 
