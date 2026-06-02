@@ -1,9 +1,46 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
-import type { EmergencyContact, EmergencyProfile, User } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 
-export type UserWithProfile = Omit<User, "profile"> & {
-  profile: (EmergencyProfile & { contacts: EmergencyContact[] }) | null;
+type EmergencyContactRecord = {
+  id: string;
+  profileId: string;
+  name: string;
+  relationship: string | null;
+  phone: string;
+  isPrimary: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type EmergencyProfileRecord = {
+  id: string;
+  userId: string;
+  qrToken: string | null;
+  displayName: string | null;
+  dateOfBirth: Date | null;
+  bloodType: string | null;
+  allergies: string | null;
+  medications: string | null;
+  medicalConditions: string | null;
+  notes: string | null;
+  primaryLanguage: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  contacts: EmergencyContactRecord[];
+};
+
+type UserRecord = {
+  id: string;
+  clerkUserId: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type UserWithProfile = UserRecord & {
+  profile: EmergencyProfileRecord | null;
 };
 
 export async function getOrCreateCurrentUserWithProfile(): Promise<UserWithProfile> {

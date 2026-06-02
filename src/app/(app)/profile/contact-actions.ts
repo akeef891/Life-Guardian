@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import type { PrismaClient } from "@prisma/client";
 import { getOrCreateCurrentUserWithProfile } from "@/lib/auth/user-context";
 import { ROUTES } from "@/lib/constants/routes";
 import { prisma } from "@/lib/db/prisma";
@@ -19,7 +18,7 @@ type ContactFormValues = {
 type ContactIdSelection = { id: Id };
 type ContactPrimarySelection = { id: Id; isPrimary: boolean };
 type TransactionClient = Omit<
-  PrismaClient,
+  typeof prisma,
   "$connect" | "$disconnect" | "$on" | "$use" | "$extends"
 >;
 
