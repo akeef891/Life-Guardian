@@ -1,11 +1,29 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import type { PrismaClient } from "@prisma/client";
 import { getOrCreateCurrentUserWithProfile } from "@/lib/auth/user-context";
 import { ROUTES } from "@/lib/constants/routes";
 import { prisma } from "@/lib/db/prisma";
 
-function toNullable(value: FormDataEntryValue | null) {
+type Id = string;
+
+type ContactFormValues = {
+  contactId: Id | null;
+  name: string | null;
+  relationship: string | null;
+  phoneInput: string | null;
+  isPrimary: boolean;
+};
+
+type ContactIdSelection = { id: Id };
+type ContactPrimarySelection = { id: Id; isPrimary: boolean };
+type TransactionClient = Omit<
+  PrismaClient,
+  "$connect" | "$disconnect" | "$on" | "$use" | "$extends"
+>;
+
+function toNullable(value: FormDataEntryValue | null): string | null {
   if (typeof value !== "string") {
     return null;
   }
@@ -13,16 +31,26 @@ function toNullable(value: FormDataEntryValue | null) {
   return trimmed.length > 0 ? trimmed : null;
 }
 
-function normalizePhone(value: string) {
+function normalizePhone(value: string): string {
   return value.replace(/[\s()-]/g, "");
 }
 
-function validatePhone(value: string) {
+function validatePhone(value: string): boolean {
   // E.164-like validation: + and 8-15 digits total.
   return /^\+[1-9]\d{7,14}$/.test(value);
 }
 
-async function getOwnedProfileId() {
+function readContactFormValues(formData: FormData): ContactFormValues {
+  return {
+    contactId: toNullable(formData.get("contactId")),
+    name: toNullable(formData.get("name")),
+    relationship: toNullable(formData.get("relationship")),
+    phoneInput: toNullable(formData.get("phone")),
+    isPrimary: formData.get("isPrimary") === "on",
+  };
+}
+
+async function getOwnedProfileId(): Promise<Id | null> {
   const { profile } = await getOrCreateCurrentUserWithProfile();
   if (!profile) {
     return null;
@@ -30,15 +58,12 @@ async function getOwnedProfileId() {
   return profile.id;
 }
 
-export async function createEmergencyContact(formData: FormData) {
+export async function createEmergencyContact(formData: FormData): Promise<void> {
   const profileId = await getOwnedProfileId();
   if (!profileId) {
     return;
   }
-  const name = toNullable(formData.get("name"));
-  const relationship = toNullable(formData.get("relationship"));
-  const phoneInput = toNullable(formData.get("phone"));
-  const isPrimary = formData.get("isPrimary") === "on";
+  const { name, relationship, phoneInput, isPrimary } = readContactFormValues(formData);
 
   if (!name || !phoneInput) {
     return;
@@ -49,7 +74,7 @@ export async function createEmergencyContact(formData: FormData) {
     return;
   }
 
-  await prisma.$transaction(async (tx) => {
+  await prisma.$transaction(async (tx: TransactionClient) => {
     if (isPrimary) {
       await tx.emergencyContact.updateMany({
         where: { profileId },
@@ -57,7 +82,7 @@ export async function createEmergencyContact(formData: FormData) {
       });
     }
 
-    const hasPrimary = await tx.emergencyContact.findFirst({
+    const hasPrimary: ContactIdSelection | null = await tx.emergencyContact.findFirst({
       where: { profileId, isPrimary: true },
       select: { id: true },
     });
@@ -77,16 +102,12 @@ export async function createEmergencyContact(formData: FormData) {
   revalidatePath(ROUTES.dashboard);
 }
 
-export async function updateEmergencyContact(formData: FormData) {
+export async function updateEmergencyContact(formData: FormData): Promise<void> {
   const profileId = await getOwnedProfileId();
   if (!profileId) {
     return;
   }
-  const contactId = toNullable(formData.get("contactId"));
-  const name = toNullable(formData.get("name"));
-  const relationship = toNullable(formData.get("relationship"));
-  const phoneInput = toNullable(formData.get("phone"));
-  const isPrimary = formData.get("isPrimary") === "on";
+  const { contactId, name, relationship, phoneInput, isPrimary } = readContactFormValues(formData);
 
   if (!contactId || !name || !phoneInput) {
     return;
@@ -97,8 +118,8 @@ export async function updateEmergencyContact(formData: FormData) {
     return;
   }
 
-  await prisma.$transaction(async (tx) => {
-    const existing = await tx.emergencyContact.findFirst({
+  await prisma.$transaction(async (tx: TransactionClient) => {
+    const existing: ContactIdSelection | null = await tx.emergencyContact.findFirst({
       where: { id: contactId, profileId },
       select: { id: true },
     });
@@ -124,13 +145,13 @@ export async function updateEmergencyContact(formData: FormData) {
       },
     });
 
-    const hasPrimary = await tx.emergencyContact.findFirst({
+    const hasPrimary: ContactIdSelection | null = await tx.emergencyContact.findFirst({
       where: { profileId, isPrimary: true },
       select: { id: true },
     });
 
     if (!hasPrimary) {
-      const first = await tx.emergencyContact.findFirst({
+      const first: ContactIdSelection | null = await tx.emergencyContact.findFirst({
         where: { profileId },
         orderBy: { createdAt: "asc" },
         select: { id: true },
@@ -148,18 +169,18 @@ export async function updateEmergencyContact(formData: FormData) {
   revalidatePath(ROUTES.dashboard);
 }
 
-export async function deleteEmergencyContact(formData: FormData) {
+export async function deleteEmergencyContact(formData: FormData): Promise<void> {
   const profileId = await getOwnedProfileId();
   if (!profileId) {
     return;
   }
-  const contactId = toNullable(formData.get("contactId"));
+  const { contactId } = readContactFormValues(formData);
   if (!contactId) {
     return;
   }
 
-  await prisma.$transaction(async (tx) => {
-    const existing = await tx.emergencyContact.findFirst({
+  await prisma.$transaction(async (tx: TransactionClient) => {
+    const existing: ContactPrimarySelection | null = await tx.emergencyContact.findFirst({
       where: { id: contactId, profileId },
       select: { id: true, isPrimary: true },
     });
@@ -173,9 +194,10 @@ export async function deleteEmergencyContact(formData: FormData) {
     });
 
     if (existing.isPrimary) {
-      const next = await tx.emergencyContact.findFirst({
+      const next: ContactIdSelection | null = await tx.emergencyContact.findFirst({
         where: { profileId },
         orderBy: { createdAt: "asc" },
+        select: { id: true },
       });
       if (next) {
         await tx.emergencyContact.update({
