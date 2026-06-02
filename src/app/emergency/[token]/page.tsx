@@ -1,6 +1,9 @@
 import { notFound } from "next/navigation";
 import { EmergencyCard } from "@/components/EmergencyCard";
-import { getPublicEmergencyProfileByToken } from "@/lib/services/emergency-profile.service";
+import {
+  getPublicEmergencyProfileByToken,
+  type PublicEmergencyContact,
+} from "@/lib/services/emergency-profile.service";
 
 type EmergencyTokenPageProps = {
   params: Promise<{ token: string }>;
@@ -25,7 +28,7 @@ export default async function EmergencyTokenPage({ params }: EmergencyTokenPageP
             allergies: profile.allergies ?? undefined,
             medications: profile.medications ?? undefined,
             medicalConditions: profile.medicalConditions ?? undefined,
-            emergencyContacts: profile.contacts.map((contact) => ({
+            emergencyContacts: profile.contacts.map((contact: PublicEmergencyContact) => ({
               name: contact.name,
               relationship: contact.relationship ?? undefined,
               phone: contact.phone,
