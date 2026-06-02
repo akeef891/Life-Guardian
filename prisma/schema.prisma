@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id          String           @id @default(cuid())
+  clerkUserId String           @unique
+  email       String           @unique
+  firstName   String?
+  lastName    String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  profile     EmergencyProfile?
+  sosAlerts   SOSAlert[]
+
+  @@index([email])
+}
+
+model EmergencyProfile {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  qrToken           String?  @unique
+  displayName       String?
+  dateOfBirth       DateTime?
+  bloodType         String?
+  allergies         String?  @db.Text
+  medications       String?  @db.Text
+  medicalConditions String?  @db.Text
+  notes             String?  @db.Text
+  primaryLanguage   String?  @default("en")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  contacts          EmergencyContact[]
+}
+
+model EmergencyContact {
+  id           String           @id @default(cuid())
+  profileId    String
+  profile      EmergencyProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  name         String
+  relationship String?
+  phone        String
+  isPrimary    Boolean          @default(false)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([profileId])
+  @@index([profileId, isPrimary])
+}
+
+model SOSAlert {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message   String?  @db.Text
+  status    String   @default("ACTIVE")
+  latitude  Float?
+  longitude Float?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status])
+}

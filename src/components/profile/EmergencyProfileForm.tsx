@@ -1,0 +1,145 @@
+"use client";
+
+import { useActionState } from "react";
+import { saveEmergencyProfile, type SaveProfileState } from "@/app/(app)/profile/actions";
+
+type EmergencyProfileFormValues = {
+  displayName: string;
+  dateOfBirth: string;
+  bloodType: string;
+  allergies: string;
+  medications: string;
+  medicalConditions: string;
+  notes: string;
+  primaryLanguage: string;
+};
+
+type EmergencyProfileFormProps = {
+  initialValues: EmergencyProfileFormValues;
+};
+
+const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"] as const;
+
+const initialState: SaveProfileState = { success: false };
+
+export function EmergencyProfileForm({ initialValues }: EmergencyProfileFormProps) {
+  const [state, formAction, isPending] = useActionState(saveEmergencyProfile, initialState);
+
+  return (
+    <form action={formAction} className="space-y-5">
+      <div className="grid gap-5 sm:grid-cols-2">
+        <label className="space-y-2">
+          <span className="text-sm font-medium text-foreground">Display name</span>
+          <input
+            name="displayName"
+            type="text"
+            defaultValue={initialValues.displayName}
+            placeholder="e.g. Alex Morgan"
+            className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none ring-brand/20 transition focus:ring-4"
+          />
+        </label>
+
+        <label className="space-y-2">
+          <span className="text-sm font-medium text-foreground">Date of birth</span>
+          <input
+            name="dateOfBirth"
+            type="date"
+            defaultValue={initialValues.dateOfBirth}
+            className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none ring-brand/20 transition focus:ring-4"
+          />
+        </label>
+      </div>
+
+      <label className="space-y-2">
+        <span className="text-sm font-medium text-foreground">Blood type</span>
+        <select
+          name="bloodType"
+          defaultValue={initialValues.bloodType}
+          className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none ring-brand/20 transition focus:ring-4"
+        >
+          <option value="">Select blood type</option>
+          {BLOOD_TYPES.map((type) => (
+            <option key={type} value={type}>
+              {type}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label className="space-y-2">
+        <span className="text-sm font-medium text-foreground">Allergies</span>
+        <textarea
+          name="allergies"
+          defaultValue={initialValues.allergies}
+          rows={3}
+          placeholder="List known allergies"
+          className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none ring-brand/20 transition focus:ring-4"
+        />
+      </label>
+
+      <label className="space-y-2">
+        <span className="text-sm font-medium text-foreground">Medications</span>
+        <textarea
+          name="medications"
+          defaultValue={initialValues.medications}
+          rows={3}
+          placeholder="List ongoing medications"
+          className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none ring-brand/20 transition focus:ring-4"
+        />
+      </label>
+
+      <label className="space-y-2">
+        <span className="text-sm font-medium text-foreground">Medical conditions</span>
+        <textarea
+          name="medicalConditions"
+          defaultValue={initialValues.medicalConditions}
+          rows={3}
+          placeholder="e.g. Asthma, Diabetes"
+          className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none ring-brand/20 transition focus:ring-4"
+        />
+      </label>
+
+      <label className="space-y-2">
+        <span className="text-sm font-medium text-foreground">Primary language</span>
+        <input
+          name="primaryLanguage"
+          type="text"
+          defaultValue={initialValues.primaryLanguage}
+          placeholder="e.g. en"
+          className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none ring-brand/20 transition focus:ring-4"
+        />
+      </label>
+
+      <label className="space-y-2">
+        <span className="text-sm font-medium text-foreground">Additional notes</span>
+        <textarea
+          name="notes"
+          defaultValue={initialValues.notes}
+          rows={4}
+          placeholder="Any critical notes for emergency responders"
+          className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none ring-brand/20 transition focus:ring-4"
+        />
+      </label>
+
+      {state.error ? (
+        <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          {state.error}
+        </p>
+      ) : null}
+
+      {state.message ? (
+        <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+          {state.message}
+        </p>
+      ) : null}
+
+      <button
+        type="submit"
+        disabled={isPending}
+        className="inline-flex h-11 items-center justify-center rounded-lg bg-brand px-5 text-sm font-semibold text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-70"
+      >
+        {isPending ? "Saving..." : "Save Emergency Profile"}
+      </button>
+    </form>
+  );
+}
