@@ -3,17 +3,10 @@ import {
   deleteEmergencyContact,
   updateEmergencyContact,
 } from "@/app/(app)/profile/contact-actions";
-
-type Contact = {
-  id: string;
-  name: string;
-  relationship: string | null;
-  phone: string;
-  isPrimary: boolean;
-};
+import type { EmergencyContactRecord } from "@/lib/db/prisma-types";
 
 type EmergencyContactsManagerProps = {
-  contacts: Contact[];
+  contacts: EmergencyContactRecord[];
 };
 
 export function EmergencyContactsManager({ contacts }: EmergencyContactsManagerProps) {

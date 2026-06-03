@@ -1,47 +1,11 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db/prisma";
+import {
+  userWithProfileInclude,
+  type UserWithProfile,
+} from "@/lib/db/prisma-types";
 
-type EmergencyContactRecord = {
-  id: string;
-  profileId: string;
-  name: string;
-  relationship: string | null;
-  phone: string;
-  isPrimary: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-type EmergencyProfileRecord = {
-  id: string;
-  userId: string;
-  qrToken: string | null;
-  displayName: string | null;
-  dateOfBirth: Date | null;
-  bloodType: string | null;
-  allergies: string | null;
-  medications: string | null;
-  medicalConditions: string | null;
-  notes: string | null;
-  primaryLanguage: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-  contacts: EmergencyContactRecord[];
-};
-
-type UserRecord = {
-  id: string;
-  clerkUserId: string;
-  email: string;
-  firstName: string | null;
-  lastName: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-export type UserWithProfile = UserRecord & {
-  profile: EmergencyProfileRecord | null;
-};
+export type { EmergencyContactRecord, EmergencyProfileWithContacts, UserWithProfile } from "@/lib/db/prisma-types";
 
 export async function getOrCreateCurrentUserWithProfile(): Promise<UserWithProfile> {
   const { userId } = await auth();
@@ -73,15 +37,7 @@ export async function getOrCreateCurrentUserWithProfile(): Promise<UserWithProfi
         create: {},
       },
     },
-    include: {
-      profile: {
-        include: {
-          contacts: {
-            orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
-          },
-        },
-      },
-    },
+    include: userWithProfileInclude,
   });
 
   if (user.profile) {
@@ -92,7 +48,7 @@ export async function getOrCreateCurrentUserWithProfile(): Promise<UserWithProfi
     data: { userId: user.id },
     include: {
       contacts: {
-        orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
+        orderBy: [{ isPrimary: "desc" as const }, { createdAt: "asc" as const }],
       },
     },
   });

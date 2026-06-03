@@ -3,6 +3,7 @@ import { EmergencyCard } from "@/components/EmergencyCard";
 import { PageHeader } from "@/components/PageHeader";
 import { QRCardPanel } from "@/components/qr/QRCardPanel";
 import { getOrCreateCurrentUserWithProfile } from "@/lib/auth/user-context";
+import type { EmergencyContactRecord } from "@/lib/db/prisma-types";
 
 export const metadata: Metadata = {
   title: "QR Card",
@@ -10,6 +11,14 @@ export const metadata: Metadata = {
 };
 
 const APP_BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://my-domain.com";
+
+function toEmergencyCardContact(contact: EmergencyContactRecord) {
+  return {
+    name: contact.name,
+    relationship: contact.relationship ?? undefined,
+    phone: contact.phone,
+  };
+}
 
 export default async function QRCardPage() {
   const { profile, firstName, lastName, email } = await getOrCreateCurrentUserWithProfile();
@@ -38,12 +47,7 @@ export default async function QRCardPage() {
               allergies: profile?.allergies ?? undefined,
               medications: profile?.medications ?? undefined,
               medicalConditions: profile?.medicalConditions ?? undefined,
-              emergencyContacts:
-                profile?.contacts.map((contact) => ({
-                  name: contact.name,
-                  relationship: contact.relationship ?? undefined,
-                  phone: contact.phone,
-                })) ?? [],
+              emergencyContacts: profile?.contacts.map(toEmergencyCardContact) ?? [],
             }}
           />
         </section>

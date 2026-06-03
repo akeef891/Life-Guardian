@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { EmergencyContactsManager } from "@/components/profile/EmergencyContactsManager";
 import { EmergencyProfileForm } from "@/components/profile/EmergencyProfileForm";
 import { getOrCreateCurrentUserWithProfile } from "@/lib/auth/user-context";
+import type { EmergencyContactRecord } from "@/lib/db/prisma-types";
 
 export const metadata: Metadata = {
   title: "Emergency Profile",
@@ -15,6 +16,15 @@ function formatDate(value: Date | null | undefined) {
     return "";
   }
   return value.toISOString().split("T")[0];
+}
+
+function toEmergencyCardContact(contact: EmergencyContactRecord) {
+  return {
+    name: contact.name,
+    relationship: contact.relationship ?? undefined,
+    phone: contact.phone,
+    isPrimary: contact.isPrimary,
+  };
 }
 
 export default async function EmergencyProfilePage() {
@@ -64,13 +74,7 @@ export default async function EmergencyProfilePage() {
               medications: profile?.medications ?? undefined,
               medicalConditions: profile?.medicalConditions ?? undefined,
               notes: profile?.notes ?? undefined,
-              emergencyContacts:
-                profile?.contacts.map((contact) => ({
-                  name: contact.name,
-                  relationship: contact.relationship ?? undefined,
-                  phone: contact.phone,
-                  isPrimary: contact.isPrimary,
-                })) ?? [],
+              emergencyContacts: profile?.contacts.map(toEmergencyCardContact) ?? [],
             }}
           />
         </section>
