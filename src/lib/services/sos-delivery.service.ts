@@ -10,33 +10,44 @@ import {
 type BuildMessageInput = {
   senderName: string;
   message: string | null;
-  location: SosLocationInput;
   mapsUrl: string | null;
+  sentAt: Date;
 };
 
-function formatLocationLine(location: SosLocationInput, mapsUrl: string | null): string {
-  if (location.latitude == null || location.longitude == null) {
-    return "Location: unavailable";
-  }
-
-  const accuracy =
-    location.accuracy != null ? ` (±${Math.round(location.accuracy)}m)` : "";
-  const coords = `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}${accuracy}`;
-  return mapsUrl ? `Location: ${coords}\nMap: ${mapsUrl}` : `Location: ${coords}`;
+function formatAlertTime(sentAt: Date): string {
+  return sentAt.toLocaleString([], {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 export function buildSosEmergencyMessage(input: BuildMessageInput): string {
+  const locationLine = input.mapsUrl ?? "Location unavailable";
+  const timeLine = formatAlertTime(input.sentAt);
+
   const lines = [
-    "SOS ALERT - Life Guardian",
-    `${input.senderName} needs emergency help.`,
+    "\u{1F6A8} LIFE GUARDIAN EMERGENCY ALERT",
+    "",
+    `${input.senderName} has triggered an SOS alert.`,
   ];
 
   if (input.message) {
-    lines.push(`Message: ${input.message}`);
+    lines.push("", `Message: ${input.message}`);
   }
 
-  lines.push(formatLocationLine(input.location, input.mapsUrl));
-  lines.push("Please respond immediately.");
+  lines.push(
+    "",
+    "Location:",
+    locationLine,
+    "",
+    "Time:",
+    timeLine,
+    "",
+    "Please contact immediately.",
+  );
 
   return lines.join("\n");
 }
@@ -45,18 +56,14 @@ function stripPlusForWhatsApp(phone: string): string {
   return phone.replace(/^\+/, "");
 }
 
-function encodeMessage(text: string): string {
-  return encodeURIComponent(text);
-}
-
 export function buildWhatsAppUrl(phone: string, message: string): string {
   const digits = stripPlusForWhatsApp(phone);
-  return `https://wa.me/${digits}?text=${encodeMessage(message)}`;
+  return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
 }
 
 export function buildSmsUrl(phone: string, message: string): string {
   const normalized = phone.replace(/\s/g, "");
-  return `sms:${normalized}?body=${encodeMessage(message)}`;
+  return `sms:${normalized}?body=${encodeURIComponent(message)}`;
 }
 
 export function prepareContactDeliveryPayloads(

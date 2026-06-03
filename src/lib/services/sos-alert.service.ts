@@ -18,17 +18,17 @@ export async function createSosAlertWithDelivery(
   input: CreateSosAlertInput,
 ): Promise<SosConfirmationDto> {
   const mapsUrl = resolveMapsUrl(input.location);
+  const sentAt = new Date();
   const emergencyMessage = buildSosEmergencyMessage({
     senderName: input.senderName,
     message: input.message,
-    location: input.location,
     mapsUrl,
+    sentAt,
   });
 
   const deliveryLinks = prepareContactDeliveryPayloads(input.contacts, emergencyMessage);
   const deliveryStatus = resolveDeliveryStatus(input.contacts.length);
   const deliveredCount = deliveryLinks.length;
-  const sentAt = new Date();
 
   const alert = await prisma.sOSAlert.create({
     data: {

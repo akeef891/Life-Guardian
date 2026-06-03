@@ -48,7 +48,7 @@ export function QRCardPanel({ emergencyUrl, appBaseUrl }: QRCardPanelProps) {
   }
 
   return (
-    <section className="flex flex-col items-center rounded-2xl border border-border bg-surface p-8">
+    <section className="flex w-full min-w-0 flex-col items-center overflow-hidden rounded-2xl border border-border bg-surface p-4 sm:p-8">
       {qrDataUrl ? (
         <img
           src={qrDataUrl}
@@ -65,7 +65,7 @@ export function QRCardPanel({ emergencyUrl, appBaseUrl }: QRCardPanelProps) {
         </div>
       )}
 
-      <p className="mt-6 w-full break-all rounded-lg border border-border bg-background px-3 py-2 text-center text-sm text-muted">
+      <p className="mt-6 w-full min-w-0 break-all rounded-lg border border-border bg-background px-3 py-2 text-center text-sm text-muted">
         {finalUrl ?? "No emergency URL yet. Generate a QR token first."}
       </p>
 

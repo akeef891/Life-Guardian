@@ -24,6 +24,7 @@ export default async function SOSPage() {
       longitude: true,
       accuracy: true,
       locationAccuracy: true,
+      locationCapturedAt: true,
       mapsUrl: true,
       deliveredCount: true,
       deliveryStatus: true,
@@ -38,7 +39,7 @@ export default async function SOSPage() {
         description="Create SOS alert events and track your recent history."
       />
 
-      <div className="mx-auto w-full max-w-3xl px-1 sm:px-0">
+      <div className="mx-auto w-full min-w-0 max-w-3xl overflow-x-hidden px-1 sm:px-0">
         <SOSTriggerPanel />
         <SOSHistoryList alerts={alerts} />
       </div>

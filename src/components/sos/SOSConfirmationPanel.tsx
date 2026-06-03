@@ -18,7 +18,7 @@ function formatSentTime(iso: string): string {
 export function SOSConfirmationPanel({ confirmation }: SOSConfirmationPanelProps) {
   return (
     <section
-      className="rounded-2xl border-2 border-emerald-300 bg-emerald-50 p-4 sm:p-6"
+      className="min-w-0 overflow-hidden rounded-2xl border-2 border-emerald-300 bg-emerald-50 p-4 sm:p-6"
       aria-live="polite"
       role="status"
     >
@@ -58,9 +58,14 @@ export function SOSConfirmationPanel({ confirmation }: SOSConfirmationPanelProps
           <dt className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
             Current location
           </dt>
-          <dd className="mt-1 text-sm font-medium text-emerald-900">
+          <dd className="mt-1 break-words text-sm font-medium text-emerald-900">
             {confirmation.locationLabel}
           </dd>
+          {confirmation.locationAccuracy != null ? (
+            <dd className="mt-1 text-xs text-emerald-800">
+              GPS accuracy: ±{Math.round(confirmation.locationAccuracy)}m
+            </dd>
+          ) : null}
           {confirmation.mapsUrl ? (
             <a
               href={confirmation.mapsUrl}

@@ -79,15 +79,15 @@ export function SOSTriggerPanel() {
   const isLocating = geoStatus === "getting-location";
 
   return (
-    <div className="space-y-4">
+    <div className="min-w-0 space-y-4 overflow-x-hidden">
       {state.confirmation ? <SOSConfirmationPanel confirmation={state.confirmation} /> : null}
 
-      <section className="mx-auto flex w-full max-w-xl flex-col rounded-2xl border border-border bg-surface p-4 sm:p-6 md:p-8">
-        <h2 className="text-lg font-semibold text-foreground sm:text-xl">Trigger SOS</h2>
-        <p className="mt-1 text-sm text-muted">
-          Activates an emergency alert, captures GPS (15s timeout, high accuracy), prepares
-          WhatsApp and SMS messages for your contacts, and logs delivery status.
-        </p>
+    <section className="mx-auto flex w-full min-w-0 max-w-xl flex-col overflow-hidden rounded-2xl border border-border bg-surface p-4 sm:p-6 md:p-8">
+      <h2 className="text-lg font-semibold text-foreground sm:text-xl">Trigger SOS</h2>
+      <p className="mt-1 text-sm text-muted">
+        High-accuracy GPS (15s timeout). Retries once if accuracy is worse than 100m. Prepares
+        WhatsApp and SMS alerts for all emergency contacts.
+      </p>
 
         <form ref={formRef} action={formAction} className="mt-5 space-y-4 sm:mt-6">
           <label className="block space-y-1.5">
@@ -117,8 +117,8 @@ export function SOSTriggerPanel() {
           ) : null}
           {isLocating ? (
             <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-              Getting your location with high accuracy… Stay still. Retries once if accuracy is
-              poor (up to 15 seconds).
+            Getting your location with high accuracy… Stay still. Retries once if accuracy is
+            over 100m (up to 15 seconds per attempt).
             </p>
           ) : null}
           {geoStatus === "permission-denied" ? (

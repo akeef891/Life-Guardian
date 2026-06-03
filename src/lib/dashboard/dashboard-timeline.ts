@@ -16,13 +16,11 @@ type EmergencyContactLike = {
   isPrimary: boolean;
   name: string;
   createdAt: Date;
-  updatedAt: Date;
 };
 
 export type EmergencyTimelineEventKind =
   | "profile_updated"
   | "contact_added"
-  | "contact_updated"
   | "qr_generated"
   | "sos_triggered";
 
@@ -59,8 +57,7 @@ function hasAnyProfileContent(profile: EmergencyProfileLike | null): boolean {
       profile.allergies ||
       profile.medications ||
       profile.medicalConditions ||
-      profile.notes ||
-      profile.qrToken,
+      profile.notes,
   );
 }
 
@@ -82,8 +79,8 @@ export function buildEmergencyActivityTimeline({
       kind: "profile_updated",
       title: "Profile Updated",
       description: profile.displayName
-        ? `Updated emergency profile for ${profile.displayName}.`
-        : "Updated emergency profile.",
+        ? `Emergency profile updated for ${profile.displayName}.`
+        : "Emergency profile was updated.",
       at: profile.updatedAt,
     });
   }
@@ -92,27 +89,13 @@ export function buildEmergencyActivityTimeline({
     events.push({
       id: `contact_added_${contact.id}`,
       kind: "contact_added",
-      title: "Contact Added",
+      title: "Emergency Contact Added",
       description: formatContactLabel(contact),
       at: contact.createdAt,
     });
-
-    // Only show an explicit "updated" event if we have meaningful changes.
-    const updatedDeltaMs = contact.updatedAt.getTime() - contact.createdAt.getTime();
-    if (updatedDeltaMs > 1500) {
-      events.push({
-        id: `contact_updated_${contact.id}`,
-        kind: "contact_updated",
-        title: "Contact Updated",
-        description: formatContactLabel(contact),
-        at: contact.updatedAt,
-      });
-    }
   }
 
   if (qrToken && profile) {
-    // NOTE: We use `profile.updatedAt` because the schema currently only stores `qrToken`
-    // on `EmergencyProfile` (there is no dedicated qrToken created timestamp).
     events.push({
       id: `qr_generated_${profile.id}`,
       kind: "qr_generated",
@@ -124,9 +107,9 @@ export function buildEmergencyActivityTimeline({
 
   for (const sos of sosAlerts) {
     const deliveryNote =
-      sos.deliveredCount != null
-        ? `${sos.deliveredCount} contact(s) prepared (${sos.deliveryStatus ?? "PENDING"}).`
-        : "SOS alert triggered.";
+      sos.deliveredCount != null && sos.deliveredCount > 0
+        ? `${sos.deliveredCount} WhatsApp/SMS link(s) prepared.`
+        : "SOS alert logged.";
     const desc = sos.message ? `${sos.message} — ${deliveryNote}` : deliveryNote;
     events.push({
       id: `sos_triggered_${sos.id}`,
@@ -137,10 +120,7 @@ export function buildEmergencyActivityTimeline({
     });
   }
 
-  // Newest first.
   events.sort((a, b) => b.at.getTime() - a.at.getTime());
 
-  // Keep the dashboard snappy: enough for the “activity” story, not too many.
-  return events.slice(0, 12);
+  return events.slice(0, 20);
 }
-

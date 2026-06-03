@@ -9,8 +9,8 @@ export default function AppLayout({
   return (
     <>
       <Navbar variant="app" />
-      <main className="flex-1">
-        <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+      <main className="flex-1 overflow-x-hidden">
+        <div className="mx-auto min-w-0 max-w-6xl px-3 py-8 sm:px-6 sm:py-10">
           <div className="mb-6 flex items-center justify-end">
             <UserButton />
           </div>

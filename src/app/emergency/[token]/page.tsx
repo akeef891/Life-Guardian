@@ -25,8 +25,8 @@ export default async function EmergencyTokenPage({ params }: EmergencyTokenPageP
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 items-start px-4 py-10 sm:px-6">
-      <div className="w-full">
+    <main className="mx-auto flex w-full min-w-0 max-w-3xl flex-1 overflow-x-hidden px-3 py-8 sm:px-6 sm:py-10">
+      <div className="w-full min-w-0">
         <p className="mb-4 text-sm font-medium text-muted">Public Emergency Card</p>
         <EmergencyCard
           data={{

@@ -64,7 +64,7 @@ export default async function DashboardPage() {
         description={`Welcome ${greetingName}. Quick access to your emergency tools.`}
       />
 
-      <div className="mx-auto w-full max-w-6xl px-1 sm:px-0">
+      <div className="mx-auto w-full min-w-0 max-w-6xl overflow-x-hidden px-1 sm:px-0">
         <EmergencyStatsCards
           profileCompleted={profileCompleted}
           contactsCount={contacts.length}

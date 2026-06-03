@@ -20,7 +20,7 @@ const GEO_OPTIONS: PositionOptions = {
 };
 
 /** Retry once when the first fix is worse than this threshold (meters). */
-const POOR_ACCURACY_METERS = 80;
+const POOR_ACCURACY_METERS = 100;
 
 function mapGeolocationError(error: GeolocationPositionError): GeolocationFailure["reason"] {
   if (error.code === error.PERMISSION_DENIED) {

@@ -11,7 +11,7 @@ type EmergencyContactsManagerProps = {
 
 export function EmergencyContactsManager({ contacts }: EmergencyContactsManagerProps) {
   return (
-    <section className="rounded-2xl border border-border bg-surface p-6">
+    <section className="min-w-0 overflow-hidden rounded-2xl border border-border bg-surface p-4 sm:p-6">
       <h2 className="text-lg font-semibold text-foreground">Emergency Contacts</h2>
       <p className="mt-2 text-sm text-muted">
         Add, edit, and delete contacts. Exactly one contact is kept as primary.
