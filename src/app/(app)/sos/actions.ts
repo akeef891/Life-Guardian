@@ -3,17 +3,15 @@
 import { revalidatePath } from "next/cache";
 import { getOrCreateCurrentUserWithProfile } from "@/lib/auth/user-context";
 import { ROUTES } from "@/lib/constants/routes";
-import { prisma } from "@/lib/db/prisma";
+import {
+  createSosAlertWithDelivery,
+  isValidSosCoordinates,
+  parseSosLocationFromForm,
+  resolveSenderName,
+} from "@/lib/services/sos-alert.service";
+import type { TriggerSosState } from "@/types/sos";
 
-export type TriggerSosState = {
-  success: boolean;
-  message?: string;
-  error?: string;
-};
-
-const SOS_STATUS_ACTIVE = "ACTIVE";
-
-function toNullable(value: FormDataEntryValue | null) {
+function toNullable(value: FormDataEntryValue | null): string | null {
   if (typeof value !== "string") {
     return null;
   }
@@ -21,50 +19,31 @@ function toNullable(value: FormDataEntryValue | null) {
   return trimmed.length > 0 ? trimmed : null;
 }
 
-function parseNullableFloat(value: string | null) {
-  if (!value) {
-    return null;
-  }
-  const parsed = Number.parseFloat(value);
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-function isValidLatitude(value: number | null) {
-  return value === null || (value >= -90 && value <= 90);
-}
-
-function isValidLongitude(value: number | null) {
-  return value === null || (value >= -180 && value <= 180);
-}
-
 export async function triggerSOSAction(
   _prevState: TriggerSosState,
   formData: FormData,
 ): Promise<TriggerSosState> {
   try {
-    const { id: userId } = await getOrCreateCurrentUserWithProfile();
-
+    const { id: userId, firstName, email, profile } = await getOrCreateCurrentUserWithProfile();
+    const contacts = profile?.contacts ?? [];
     const message = toNullable(formData.get("message"));
-    const latitude = parseNullableFloat(toNullable(formData.get("latitude")));
-    const longitude = parseNullableFloat(toNullable(formData.get("longitude")));
-    const accuracy = parseNullableFloat(toNullable(formData.get("accuracy")));
+    const location = parseSosLocationFromForm(formData);
 
-    if (!isValidLatitude(latitude) || !isValidLongitude(longitude)) {
+    if (!isValidSosCoordinates(location)) {
       return {
         success: false,
         error: "Invalid location coordinates received.",
       };
     }
 
-    await prisma.sOSAlert.create({
-      data: {
-        userId,
-        message,
-        status: SOS_STATUS_ACTIVE,
-        latitude,
-        longitude,
-        accuracy,
-      },
+    const senderName = resolveSenderName(profile?.displayName, firstName, email);
+
+    const confirmation = await createSosAlertWithDelivery({
+      userId,
+      message,
+      location,
+      contacts,
+      senderName,
     });
 
     revalidatePath(ROUTES.sos);
@@ -72,7 +51,8 @@ export async function triggerSOSAction(
 
     return {
       success: true,
-      message: "SOS alert has been created successfully.",
+      message: "SOS alert has been activated successfully.",
+      confirmation,
     };
   } catch {
     return {
@@ -81,3 +61,5 @@ export async function triggerSOSAction(
     };
   }
 }
+
+export type { TriggerSosState } from "@/types/sos";

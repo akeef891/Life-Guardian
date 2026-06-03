@@ -8,6 +8,7 @@ import { getOrCreateCurrentUserWithProfile } from "@/lib/auth/user-context";
 import { prisma } from "@/lib/db/prisma";
 import { calculateEmergencyReadiness } from "@/lib/dashboard/calculate-emergency-readiness";
 import { buildEmergencyActivityTimeline } from "@/lib/dashboard/dashboard-timeline";
+import { getSosDashboardStats } from "@/lib/services/sos-alert.service";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -18,7 +19,7 @@ export default async function DashboardPage() {
   const { id: userId, firstName, email, profile } = await getOrCreateCurrentUserWithProfile();
   const contacts = profile?.contacts ?? [];
 
-  const [sosAlerts, sosCount] = await Promise.all([
+  const [sosAlerts, sosStats] = await Promise.all([
     prisma.sOSAlert.findMany({
       where: { userId },
       orderBy: { createdAt: "desc" },
@@ -27,12 +28,15 @@ export default async function DashboardPage() {
         id: true,
         createdAt: true,
         message: true,
+        deliveryStatus: true,
+        deliveredCount: true,
       },
     }),
-    prisma.sOSAlert.count({
-      where: { userId },
-    }),
+    getSosDashboardStats(userId),
   ]);
+
+  const sosCount = sosStats.totalSent;
+  const lastSosAt = sosStats.lastSosAt;
 
   const readiness = calculateEmergencyReadiness({
     profile,
@@ -65,6 +69,7 @@ export default async function DashboardPage() {
           profileCompleted={profileCompleted}
           contactsCount={contacts.length}
           sosCount={sosCount}
+          lastSosAt={lastSosAt}
           qrEnabled={qrEnabled}
         />
 

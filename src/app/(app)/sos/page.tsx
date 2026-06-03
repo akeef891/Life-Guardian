@@ -23,6 +23,10 @@ export default async function SOSPage() {
       latitude: true,
       longitude: true,
       accuracy: true,
+      locationAccuracy: true,
+      mapsUrl: true,
+      deliveredCount: true,
+      deliveryStatus: true,
       createdAt: true,
     },
   });

@@ -33,24 +33,24 @@ export default async function QRCardPage() {
         description="Share this card so others can access your emergency information by scanning a QR code."
       />
 
-      <div className="grid gap-10 lg:grid-cols-2">
-        <QRCardPanel emergencyUrl={emergencyUrl} appBaseUrl={APP_BASE_URL} />
+      <div className="mx-auto w-full max-w-6xl px-3 sm:px-0">
+        <div className="grid gap-8 lg:grid-cols-2">
+          <QRCardPanel emergencyUrl={emergencyUrl} appBaseUrl={APP_BASE_URL} />
 
-        <section>
-          <h2 className="mb-4 text-lg font-semibold text-foreground">
-            Card preview
-          </h2>
-          <EmergencyCard
-            data={{
-              displayName,
-              bloodType: profile?.bloodType ?? undefined,
-              allergies: profile?.allergies ?? undefined,
-              medications: profile?.medications ?? undefined,
-              medicalConditions: profile?.medicalConditions ?? undefined,
-              emergencyContacts: profile?.contacts.map(toEmergencyCardContact) ?? [],
-            }}
-          />
-        </section>
+          <section>
+            <h2 className="mb-4 text-lg font-semibold text-foreground">Card preview</h2>
+            <EmergencyCard
+              data={{
+                displayName,
+                bloodType: profile?.bloodType ?? undefined,
+                allergies: profile?.allergies ?? undefined,
+                medications: profile?.medications ?? undefined,
+                medicalConditions: profile?.medicalConditions ?? undefined,
+                emergencyContacts: profile?.contacts.map(toEmergencyCardContact) ?? [],
+              }}
+            />
+          </section>
+        </div>
       </div>
     </>
   );

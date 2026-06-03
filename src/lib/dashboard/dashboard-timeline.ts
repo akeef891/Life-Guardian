@@ -42,6 +42,8 @@ type BuildInput = {
     id: string;
     createdAt: Date;
     message: string | null;
+    deliveredCount?: number;
+    deliveryStatus?: string;
   }>;
 };
 
@@ -121,7 +123,11 @@ export function buildEmergencyActivityTimeline({
   }
 
   for (const sos of sosAlerts) {
-    const desc = sos.message ? `Message: ${sos.message}` : "SOS alert triggered.";
+    const deliveryNote =
+      sos.deliveredCount != null
+        ? `${sos.deliveredCount} contact(s) prepared (${sos.deliveryStatus ?? "PENDING"}).`
+        : "SOS alert triggered.";
+    const desc = sos.message ? `${sos.message} — ${deliveryNote}` : deliveryNote;
     events.push({
       id: `sos_triggered_${sos.id}`,
       kind: "sos_triggered",

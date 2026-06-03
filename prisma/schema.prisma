@@ -54,16 +54,22 @@ model EmergencyContact {
 }
 
 model SOSAlert {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  message   String?  @db.Text
-  status    String   @default("ACTIVE")
-  latitude  Float?
-  longitude Float?
-  accuracy  Float?
-  createdAt DateTime @default(now())
+  id                 String    @id @default(cuid())
+  userId             String
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message            String?   @db.Text
+  status             String    @default("ACTIVE")
+  latitude           Float?
+  longitude          Float?
+  accuracy           Float?
+  locationAccuracy   Float?
+  locationCapturedAt DateTime?
+  mapsUrl            String?
+  deliveredCount     Int       @default(0)
+  deliveryStatus     String    @default("PENDING")
+  createdAt          DateTime  @default(now())
 
   @@index([userId, createdAt(sort: Desc)])
   @@index([status])
+  @@index([deliveryStatus])
 }

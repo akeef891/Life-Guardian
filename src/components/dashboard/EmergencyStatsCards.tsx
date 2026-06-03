@@ -30,13 +30,27 @@ type EmergencyStatsCardsProps = {
   profileCompleted: boolean;
   contactsCount: number;
   sosCount: number;
+  lastSosAt: Date | null;
   qrEnabled: boolean;
 };
+
+function formatLastSos(value: Date | null): string {
+  if (!value) {
+    return "Never";
+  }
+  return value.toLocaleString([], {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
 export function EmergencyStatsCards({
   profileCompleted,
   contactsCount,
   sosCount,
+  lastSosAt,
   qrEnabled,
 }: EmergencyStatsCardsProps) {
   return (
@@ -88,7 +102,7 @@ export function EmergencyStatsCards({
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-              SOS Alerts
+              Total SOS Sent
             </p>
             <div className="mt-2 flex items-center gap-2">
               <div className="rounded-lg bg-sos/10 p-2 text-sos">
@@ -97,7 +111,7 @@ export function EmergencyStatsCards({
               <p className="text-2xl font-bold text-foreground">{sosCount}</p>
             </div>
             <p className="mt-2 text-sm text-muted">
-              {sosCount === 0 ? "Trigger an SOS once to activate history." : "Your latest activity shows below."}
+              Last SOS: {formatLastSos(lastSosAt)}
             </p>
           </div>
         </div>

@@ -1,98 +1,86 @@
-export type GeolocationResult =
-  | {
-      ok: true;
-      latitude: number;
-      longitude: number;
-      accuracy: number;
-    }
-  | {
-      ok: false;
-      reason: "permission-denied" | "unavailable" | "timeout" | "unsupported" | "failed";
-    };
+export type GeolocationSuccess = {
+  ok: true;
+  latitude: number;
+  longitude: number;
+  accuracy: number;
+  timestamp: number;
+};
 
-const TARGET_ACCURACY_METERS = 30;
-const MAX_WAIT_MS = 22_000;
+export type GeolocationFailure = {
+  ok: false;
+  reason: "permission-denied" | "unavailable" | "timeout" | "unsupported" | "failed";
+};
 
-/**
- * Uses watchPosition to collect readings and returns the most accurate fix,
- * or the best fix after timeout. Improves on a single quick getCurrentPosition
- * (which often returns network/cell location ~50–150m off).
- */
-export function getAccuratePosition(): Promise<GeolocationResult> {
+export type GeolocationResult = GeolocationSuccess | GeolocationFailure;
+
+const GEO_OPTIONS: PositionOptions = {
+  enableHighAccuracy: true,
+  timeout: 15_000,
+  maximumAge: 0,
+};
+
+/** Retry once when the first fix is worse than this threshold (meters). */
+const POOR_ACCURACY_METERS = 80;
+
+function mapGeolocationError(error: GeolocationPositionError): GeolocationFailure["reason"] {
+  if (error.code === error.PERMISSION_DENIED) {
+    return "permission-denied";
+  }
+  if (error.code === error.POSITION_UNAVAILABLE) {
+    return "unavailable";
+  }
+  if (error.code === error.TIMEOUT) {
+    return "timeout";
+  }
+  return "failed";
+}
+
+function getCurrentPositionOnce(): Promise<GeolocationResult> {
   return new Promise((resolve) => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
       resolve({ ok: false, reason: "unsupported" });
       return;
     }
 
-    let best: GeolocationPosition | null = null;
-    let watchId: number | null = null;
-    let settled = false;
-
-    const finish = (result: GeolocationResult) => {
-      if (settled) {
-        return;
-      }
-      settled = true;
-      if (watchId !== null) {
-        navigator.geolocation.clearWatch(watchId);
-      }
-      resolve(result);
-    };
-
-    const timeoutId = window.setTimeout(() => {
-      if (best) {
-        finish({
-          ok: true,
-          latitude: best.coords.latitude,
-          longitude: best.coords.longitude,
-          accuracy: best.coords.accuracy,
-        });
-      } else {
-        finish({ ok: false, reason: "timeout" });
-      }
-    }, MAX_WAIT_MS);
-
-    const onSuccess = (position: GeolocationPosition) => {
-      if (!best || position.coords.accuracy < best.coords.accuracy) {
-        best = position;
-      }
-
-      if (position.coords.accuracy <= TARGET_ACCURACY_METERS) {
-        window.clearTimeout(timeoutId);
-        finish({
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        resolve({
           ok: true,
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
           accuracy: position.coords.accuracy,
+          timestamp: position.timestamp,
         });
-      }
-    };
-
-    const onError = (error: GeolocationPositionError) => {
-      if (error.code === error.PERMISSION_DENIED) {
-        window.clearTimeout(timeoutId);
-        if (best) {
-          finish({
-            ok: true,
-            latitude: best.coords.latitude,
-            longitude: best.coords.longitude,
-            accuracy: best.coords.accuracy,
-          });
-        } else {
-          finish({ ok: false, reason: "permission-denied" });
-        }
-        return;
-      }
-      // Transient errors during watch: keep waiting until timeout picks best fix.
-    };
-
-    watchId = navigator.geolocation.watchPosition(onSuccess, onError, {
-      enableHighAccuracy: true,
-      maximumAge: 0,
-      timeout: MAX_WAIT_MS,
-    });
+      },
+      (error) => {
+        resolve({ ok: false, reason: mapGeolocationError(error) });
+      },
+      GEO_OPTIONS,
+    );
   });
+}
+
+/**
+ * Uses getCurrentPosition with high accuracy settings.
+ * Retries once when the first reading accuracy is poor.
+ */
+export async function getAccuratePosition(): Promise<GeolocationResult> {
+  const first = await getCurrentPositionOnce();
+
+  if (!first.ok) {
+    return first;
+  }
+
+  if (first.accuracy <= POOR_ACCURACY_METERS) {
+    return first;
+  }
+
+  const retry = await getCurrentPositionOnce();
+  if (!retry.ok) {
+    return first;
+  }
+
+  return retry.accuracy < first.accuracy ? retry : first;
 }
 
 /** Full precision for map URLs (~1cm at equator with 7 decimals). */

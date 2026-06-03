@@ -39,7 +39,8 @@ export default async function EmergencyProfilePage() {
         description="Manage and persist your emergency medical information securely."
       />
 
-      <div className="grid gap-10 lg:grid-cols-2">
+      <div className="mx-auto w-full max-w-6xl px-3 sm:px-0">
+        <div className="grid gap-8 lg:grid-cols-2">
         <section className="rounded-2xl border border-border bg-surface p-6">
           <h2 className="text-lg font-semibold text-foreground">Profile editor</h2>
           <p className="mt-2 text-sm text-muted">
@@ -78,10 +79,11 @@ export default async function EmergencyProfilePage() {
             }}
           />
         </section>
-      </div>
+        </div>
 
-      <div className="mt-10">
-        <EmergencyContactsManager contacts={profile?.contacts ?? []} />
+        <div className="mt-8 sm:mt-10">
+          <EmergencyContactsManager contacts={profile?.contacts ?? []} />
+        </div>
       </div>
     </>
   );

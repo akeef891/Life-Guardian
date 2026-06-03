@@ -1,7 +1,4 @@
-import {
-  buildGoogleMapsUrl,
-  formatAccuracyLabel,
-} from "@/lib/geolocation/get-accurate-position";
+import { formatAccuracyLabel } from "@/lib/geolocation/get-accurate-position";
 import { formatCoordDisplay } from "@/lib/geolocation/format-coords";
 
 type SOSHistoryItem = {
@@ -11,6 +8,10 @@ type SOSHistoryItem = {
   latitude: number | null;
   longitude: number | null;
   accuracy: number | null;
+  locationAccuracy: number | null;
+  mapsUrl: string | null;
+  deliveredCount: number;
+  deliveryStatus: string;
   createdAt: Date;
 };
 
@@ -40,10 +41,8 @@ export function SOSHistoryList({ alerts }: SOSHistoryListProps) {
         <ul className="mt-4 space-y-3">
           {alerts.map((alert) => {
             const hasLocation = alert.latitude !== null && alert.longitude !== null;
-            const mapsUrl =
-              hasLocation && alert.latitude != null && alert.longitude != null
-                ? buildGoogleMapsUrl(alert.latitude, alert.longitude)
-                : null;
+            const mapsUrl = alert.mapsUrl;
+            const accuracy = alert.locationAccuracy ?? alert.accuracy;
 
             return (
               <li
@@ -54,12 +53,19 @@ export function SOSHistoryList({ alerts }: SOSHistoryListProps) {
                   <span className="w-fit rounded-full bg-sos/10 px-2 py-0.5 text-xs font-semibold text-sos">
                     {alert.status}
                   </span>
+                  <span className="w-fit rounded-full border border-border px-2 py-0.5 text-xs font-medium text-muted">
+                    {alert.deliveryStatus}
+                  </span>
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
                     <span>{formatDate(alert.createdAt)}</span>
-                    <span aria-hidden>•</span>
+                    <span aria-hidden>-</span>
                     <span>{formatTime(alert.createdAt)}</span>
                   </div>
                 </div>
+
+                <p className="mt-2 text-xs text-muted">
+                  {alert.deliveredCount} contact{alert.deliveredCount === 1 ? "" : "s"} prepared
+                </p>
 
                 {hasLocation ? (
                   <div className="mt-3 space-y-2">
@@ -73,7 +79,7 @@ export function SOSHistoryList({ alerts }: SOSHistoryListProps) {
                         {formatCoordDisplay(alert.longitude)}
                       </p>
                     </div>
-                    <p className="text-xs text-muted">{formatAccuracyLabel(alert.accuracy)}</p>
+                    <p className="text-xs text-muted">{formatAccuracyLabel(accuracy)}</p>
                     {mapsUrl ? (
                       <a
                         href={mapsUrl}
