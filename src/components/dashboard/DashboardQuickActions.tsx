@@ -6,17 +6,18 @@ type Action = {
   href: string;
   title: string;
   description: string;
+  tone?: "default" | "danger";
 };
 
 const ACTIONS: Action[] = [
   {
-    href: ROUTES.profile,
+    href: `${ROUTES.profile}#profile-editor`,
     title: "Edit Profile",
     description: "Update your medical information.",
   },
   {
-    href: ROUTES.profile,
-    title: "Manage Contacts",
+    href: `${ROUTES.profile}#emergency-contacts`,
+    title: "Add Contact",
     description: "Add or update emergency contacts.",
   },
   {
@@ -28,6 +29,7 @@ const ACTIONS: Action[] = [
     href: ROUTES.sos,
     title: "Trigger SOS",
     description: "Create an SOS alert and notify your contacts.",
+    tone: "danger",
   },
 ];
 
@@ -44,18 +46,28 @@ export function DashboardQuickActions() {
           <Link
             key={action.title}
             href={action.href}
-            className="group rounded-xl border border-border bg-background p-4 transition-shadow hover:shadow-sm"
+            className={[
+              "group flex min-h-[4.5rem] items-start rounded-xl border p-4 transition-shadow hover:shadow-sm focus:outline-none focus:ring-4 focus:ring-brand/25",
+              action.tone === "danger"
+                ? "border-sos/20 bg-sos/5 hover:border-sos/40"
+                : "border-border bg-background hover:border-brand/30",
+            ].join(" ")}
           >
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex min-w-0 flex-1 items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-foreground">{action.title}</p>
                 <p className="mt-1 text-xs text-muted">{action.description}</p>
               </div>
               <span
-                className="mt-1 inline-flex h-9 w-9 items-center justify-center rounded-lg bg-brand/10 text-brand transition-colors group-hover:bg-brand/20"
+                className={[
+                  "mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-sm font-bold transition-colors",
+                  action.tone === "danger"
+                    ? "bg-sos/10 text-sos group-hover:bg-sos/20"
+                    : "bg-brand/10 text-brand group-hover:bg-brand/20",
+                ].join(" ")}
                 aria-hidden
               >
-                &gt;
+                →
               </span>
             </div>
           </Link>
@@ -64,4 +76,3 @@ export function DashboardQuickActions() {
     </DashboardCard>
   );
 }
-

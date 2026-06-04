@@ -1,6 +1,13 @@
+import {
+  calculateCompletionBreakdown,
+  type CompletionBreakdown,
+} from "./calculate-completion";
+
 type EmergencyProfileLike = {
-  bloodType?: string | null;
+  displayName?: string | null;
   dateOfBirth?: Date | null;
+  primaryLanguage?: string | null;
+  bloodType?: string | null;
   allergies?: string | null;
   medications?: string | null;
   medicalConditions?: string | null;
@@ -11,22 +18,29 @@ type EmergencyContactLike = {
   isPrimary: boolean;
 };
 
-export type EmergencyReadinessItemKey =
-  | "profile_completed"
-  | "primary_contact_exists"
-  | "qr_generated"
-  | "has_sos_alert";
+export type ReadinessStatus = "needs_attention" | "good" | "emergency_ready";
 
-export type EmergencyReadinessItem = {
-  key: EmergencyReadinessItemKey;
+export type EmergencyReadinessFactorKey =
+  | "profile_completion"
+  | "medical_completion"
+  | "contacts_setup"
+  | "qr_generated"
+  | "sos_tested";
+
+export type EmergencyReadinessFactor = {
+  key: EmergencyReadinessFactorKey;
   label: string;
   achieved: boolean;
   points: number;
+  maxPoints: number;
 };
 
-export type EmergencyReadinessScore = {
-  score: number; // out of 100
-  items: EmergencyReadinessItem[];
+export type EmergencyReadinessResult = {
+  score: number;
+  status: ReadinessStatus;
+  statusLabel: string;
+  completion: CompletionBreakdown;
+  factors: EmergencyReadinessFactor[];
 };
 
 type CalculateInput = {
@@ -36,21 +50,27 @@ type CalculateInput = {
   sosAlertsCount: number;
 };
 
-function isProfileCompleted(profile: EmergencyProfileLike | null): boolean {
-  if (!profile) {
-    return false;
-  }
+const PROFILE_WEIGHT = 15;
+const MEDICAL_WEIGHT = 25;
+const CONTACTS_WEIGHT = 20;
+const QR_WEIGHT = 20;
+const SOS_WEIGHT = 20;
 
-  // "Completed" is intentionally pragmatic: a user may not fill everything,
-  // but as soon as there is meaningful medical info, we consider it started.
-  return Boolean(
-    profile.bloodType ||
-      profile.dateOfBirth ||
-      profile.allergies ||
-      profile.medications ||
-      profile.medicalConditions ||
-      profile.notes,
-  );
+function resolveReadinessStatus(score: number): {
+  status: ReadinessStatus;
+  statusLabel: string;
+} {
+  if (score >= 80) {
+    return { status: "emergency_ready", statusLabel: "Emergency Ready" };
+  }
+  if (score >= 50) {
+    return { status: "good", statusLabel: "Good" };
+  }
+  return { status: "needs_attention", statusLabel: "Needs Attention" };
+}
+
+function scoreFromPercent(percent: number, maxPoints: number): number {
+  return Math.round((Math.max(0, Math.min(100, percent)) / 100) * maxPoints);
 }
 
 export function calculateEmergencyReadiness({
@@ -58,40 +78,68 @@ export function calculateEmergencyReadiness({
   contacts,
   qrToken,
   sosAlertsCount,
-}: CalculateInput): EmergencyReadinessScore {
-  const PROFILE_POINTS = 25;
-  const PRIMARY_CONTACT_POINTS = 25;
-  const QR_POINTS = 25;
-  const SOS_POINTS = 25;
+}: CalculateInput): EmergencyReadinessResult {
+  const completion = calculateCompletionBreakdown({ profile, contacts, qrToken });
 
-  const items: EmergencyReadinessItem[] = [
+  const profilePoints = scoreFromPercent(completion.profile, PROFILE_WEIGHT);
+  const medicalPoints = scoreFromPercent(completion.medical, MEDICAL_WEIGHT);
+  const contactsPoints = scoreFromPercent(completion.contacts, CONTACTS_WEIGHT);
+  const qrPoints = qrToken ? QR_WEIGHT : 0;
+  const sosPoints = sosAlertsCount > 0 ? SOS_WEIGHT : 0;
+
+  const factors: EmergencyReadinessFactor[] = [
     {
-      key: "profile_completed",
-      label: "Profile Completed",
-      achieved: isProfileCompleted(profile),
-      points: PROFILE_POINTS,
+      key: "profile_completion",
+      label: "Profile completion",
+      achieved: completion.profile >= 100,
+      points: profilePoints,
+      maxPoints: PROFILE_WEIGHT,
     },
     {
-      key: "primary_contact_exists",
-      label: "Primary Contact",
-      achieved: contacts.some((c) => c.isPrimary),
-      points: PRIMARY_CONTACT_POINTS,
+      key: "medical_completion",
+      label: "Medical information",
+      achieved: completion.medical >= 80,
+      points: medicalPoints,
+      maxPoints: MEDICAL_WEIGHT,
+    },
+    {
+      key: "contacts_setup",
+      label: "Emergency contacts",
+      achieved: completion.contacts >= 75,
+      points: contactsPoints,
+      maxPoints: CONTACTS_WEIGHT,
     },
     {
       key: "qr_generated",
-      label: "QR Generated",
+      label: "QR card generated",
       achieved: Boolean(qrToken),
-      points: QR_POINTS,
+      points: qrPoints,
+      maxPoints: QR_WEIGHT,
     },
     {
-      key: "has_sos_alert",
-      label: "SOS Triggered",
+      key: "sos_tested",
+      label: "SOS tested",
       achieved: sosAlertsCount > 0,
-      points: SOS_POINTS,
+      points: sosPoints,
+      maxPoints: SOS_WEIGHT,
     },
   ];
 
-  const score = items.reduce((sum, item) => sum + (item.achieved ? item.points : 0), 0);
-  return { score, items };
+  const score = Math.min(
+    100,
+    factors.reduce((sum, factor) => sum + factor.points, 0),
+  );
+  const { status, statusLabel } = resolveReadinessStatus(score);
+
+  return {
+    score,
+    status,
+    statusLabel,
+    completion,
+    factors,
+  };
 }
 
+/** @deprecated Use EmergencyReadinessResult — kept for gradual migration */
+export type EmergencyReadinessItem = EmergencyReadinessFactor;
+export type EmergencyReadinessScore = EmergencyReadinessResult;

@@ -1,18 +1,21 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/PageHeader";
+import { CompletionTrackingPanel } from "@/components/dashboard/CompletionTrackingPanel";
 import { DashboardQuickActions } from "@/components/dashboard/DashboardQuickActions";
 import { EmergencyActivityTimeline } from "@/components/dashboard/EmergencyActivityTimeline";
 import { EmergencyReadinessScoreCard } from "@/components/dashboard/EmergencyReadinessScore";
+import { EmergencySmartRecommendations } from "@/components/dashboard/EmergencySmartRecommendations";
 import { EmergencyStatsCards } from "@/components/dashboard/EmergencyStatsCards";
 import { getOrCreateCurrentUserWithProfile } from "@/lib/auth/user-context";
 import { prisma } from "@/lib/db/prisma";
 import { calculateEmergencyReadiness } from "@/lib/dashboard/calculate-emergency-readiness";
 import { buildEmergencyActivityTimeline } from "@/lib/dashboard/dashboard-timeline";
+import { generateDashboardRecommendations } from "@/lib/dashboard/generate-recommendations";
 import { getSosDashboardStats } from "@/lib/services/sos-alert.service";
 
 export const metadata: Metadata = {
   title: "Dashboard",
-  description: "Your Life Guardian dashboard overview.",
+  description: "Your Life Guardian emergency readiness center.",
 };
 
 export default async function DashboardPage() {
@@ -37,82 +40,65 @@ export default async function DashboardPage() {
 
   const sosCount = sosStats.totalSent;
   const lastSosAt = sosStats.lastSosAt;
+  const qrToken = profile?.qrToken ?? null;
 
   const readiness = calculateEmergencyReadiness({
     profile,
     contacts,
-    qrToken: profile?.qrToken ?? null,
+    qrToken,
     sosAlertsCount: sosCount,
   });
-  const profileCompleted =
-    readiness.items.find((i) => i.key === "profile_completed")?.achieved ?? false;
-  const qrEnabled = readiness.items.find((i) => i.key === "qr_generated")?.achieved ?? false;
+
+  const recommendations = generateDashboardRecommendations({
+    profile,
+    contactsCount: contacts.length,
+    hasPrimaryContact: contacts.some((c) => c.isPrimary),
+    qrToken,
+    sosAlertsCount: sosCount,
+    completion: readiness.completion,
+  });
 
   const timelineEvents = buildEmergencyActivityTimeline({
     profile,
     contacts,
-    qrToken: profile?.qrToken ?? null,
+    qrToken,
     sosAlerts,
   });
 
   const greetingName = firstName ?? email;
 
   return (
-    <div>
+    <div className="min-w-0">
       <PageHeader
-        title="Dashboard"
-        description={`Welcome ${greetingName}. Quick access to your emergency tools.`}
+        title="Emergency Dashboard"
+        description={`Welcome ${greetingName}. Your readiness center for profiles, contacts, QR, and SOS.`}
       />
 
       <div className="mx-auto w-full min-w-0 max-w-6xl overflow-x-hidden px-1 sm:px-0">
         <EmergencyStatsCards
-          profileCompleted={profileCompleted}
+          readinessScore={readiness.score}
+          readinessLabel={readiness.statusLabel}
           contactsCount={contacts.length}
           sosCount={sosCount}
           lastSosAt={lastSosAt}
-          qrEnabled={qrEnabled}
+          qrEnabled={Boolean(qrToken)}
         />
 
-        <div className="mt-6 grid gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-1">
-            <EmergencyReadinessScoreCard score={readiness.score} items={readiness.items} />
+        <div className="mt-6 grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
+          <EmergencyReadinessScoreCard
+            score={readiness.score}
+            status={readiness.status}
+            statusLabel={readiness.statusLabel}
+            factors={readiness.factors}
+          />
+          <CompletionTrackingPanel completion={readiness.completion} />
+          <div className="lg:col-span-2 xl:col-span-1">
+            <EmergencySmartRecommendations recommendations={recommendations} />
           </div>
-          <div className="lg:col-span-1">
-            <DashboardQuickActions />
-          </div>
-          <div className="hidden lg:block lg:col-span-1">
-            <div className="rounded-2xl border border-border bg-surface p-6">
-              <h2 className="text-lg font-semibold text-foreground">What to do next</h2>
-              <p className="mt-1 text-sm text-muted">
-                Your score updates as you complete your emergency setup.
-              </p>
-              <ul className="mt-4 space-y-3">
-                {readiness.items.map((item) => (
-                  <li key={item.key} className="flex items-start gap-3">
-                    <span
-                      className={[
-                        "mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full border text-xs font-bold",
-                        item.achieved
-                          ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                          : "border-border bg-background text-muted",
-                      ].join(" ")}
-                    >
-                      {item.achieved ? "ON" : "OFF"}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-foreground">{item.label}</p>
-                      <p className="text-xs text-muted">
-                        {item.achieved ? "Complete" : "Still needed to improve readiness"}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-5 rounded-xl bg-background p-4 text-sm text-muted">
-                Tip: QR + SOS history make the dashboard most useful during emergencies.
-              </div>
-            </div>
-          </div>
+        </div>
+
+        <div className="mt-6">
+          <DashboardQuickActions />
         </div>
 
         <EmergencyActivityTimeline events={timelineEvents} />

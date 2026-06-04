@@ -124,6 +124,7 @@ export function EmergencyContactsManager({ contacts }: EmergencyContactsManagerP
 
   return (
     <section
+      id="emergency-contacts"
       className="min-w-0 overflow-hidden rounded-2xl border border-border bg-surface p-4 sm:p-6"
       aria-labelledby="contacts-heading"
     >
