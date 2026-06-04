@@ -33,8 +33,8 @@ export default async function QRCardPage() {
         description="Share this card so others can access your emergency information by scanning a QR code."
       />
 
-      <div className="mx-auto w-full max-w-6xl px-3 sm:px-0">
-        <div className="grid gap-8 lg:grid-cols-2">
+      <div className="mx-auto w-full min-w-0 max-w-6xl overflow-x-hidden px-3 sm:px-0">
+        <div className="grid min-w-0 gap-6 sm:gap-8 lg:grid-cols-2">
           <QRCardPanel emergencyUrl={emergencyUrl} appBaseUrl={APP_BASE_URL} />
 
           <section>

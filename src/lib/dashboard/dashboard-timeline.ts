@@ -31,7 +31,10 @@ export type EmergencyTimelineEventKind =
   | "sos_created"
   | "contact_responded"
   | "escalation_triggered"
-  | "incident_closed";
+  | "incident_closed"
+  | "check_in_created"
+  | "community_alert_viewed"
+  | "resource_opened";
 
 export type EmergencyTimelineEvent = {
   id: string;
@@ -60,11 +63,28 @@ type SosAlertTimelineRow = {
   }>;
 };
 
+type SafetyCheckInRow = {
+  id: string;
+  status: string;
+  note: string | null;
+  createdAt: Date;
+};
+
+type ActivityLogRow = {
+  id: string;
+  eventKind: string;
+  title: string;
+  description: string | null;
+  createdAt: Date;
+};
+
 type BuildInput = {
   profile: EmergencyProfileLike | null;
   contacts: EmergencyContactLike[];
   qrToken: string | null;
   sosAlerts: SosAlertTimelineRow[];
+  safetyCheckIns?: SafetyCheckInRow[];
+  activityLogs?: ActivityLogRow[];
 };
 
 function hasAnyProfileContent(profile: EmergencyProfileLike | null): boolean {
@@ -146,11 +166,26 @@ function pushSosAlertEvents(events: EmergencyTimelineEvent[], sos: SosAlertTimel
   }
 }
 
+function mapActivityKind(eventKind: string): EmergencyTimelineEventKind | null {
+  switch (eventKind) {
+    case "CHECK_IN_CREATED":
+      return "check_in_created";
+    case "COMMUNITY_ALERT_VIEWED":
+      return "community_alert_viewed";
+    case "RESOURCE_OPENED":
+      return "resource_opened";
+    default:
+      return null;
+  }
+}
+
 export function buildEmergencyActivityTimeline({
   profile,
   contacts,
   qrToken,
   sosAlerts,
+  safetyCheckIns = [],
+  activityLogs = [],
 }: BuildInput): EmergencyTimelineEvent[] {
   const events: EmergencyTimelineEvent[] = [];
 
@@ -188,6 +223,32 @@ export function buildEmergencyActivityTimeline({
 
   for (const sos of sosAlerts) {
     pushSosAlertEvents(events, sos);
+  }
+
+  for (const checkIn of safetyCheckIns) {
+    events.push({
+      id: `check_in_${checkIn.id}`,
+      kind: "check_in_created",
+      title: "Safety Check-In",
+      description: checkIn.note
+        ? `${checkIn.status} — ${checkIn.note}`
+        : checkIn.status,
+      at: checkIn.createdAt,
+    });
+  }
+
+  for (const log of activityLogs) {
+    const kind = mapActivityKind(log.eventKind);
+    if (!kind || kind === "check_in_created") {
+      continue;
+    }
+    events.push({
+      id: `activity_${log.id}`,
+      kind,
+      title: log.title,
+      description: log.description ?? undefined,
+      at: log.createdAt,
+    });
   }
 
   events.sort((a, b) => b.at.getTime() - a.at.getTime());

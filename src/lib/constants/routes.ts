@@ -7,6 +7,9 @@ export const ROUTES = {
   profile: "/profile",
   qrCard: "/qr-card",
   sos: "/sos",
+  resources: "/resources",
+  checkIn: "/check-in",
+  preparedness: "/preparedness",
 } as const;
 
 export const LANDING_SECTIONS = {
@@ -26,6 +29,9 @@ export const APP_NAV_LINKS = [
   { href: ROUTES.profile, label: "Emergency Profile" },
   { href: ROUTES.qrCard, label: "QR Card" },
   { href: ROUTES.sos, label: "SOS" },
+  { href: ROUTES.resources, label: "Resources" },
+  { href: ROUTES.checkIn, label: "Check-In" },
+  { href: ROUTES.preparedness, label: "Preparedness" },
 ] as const;
 
 export const FOOTER_QUICK_LINKS = [

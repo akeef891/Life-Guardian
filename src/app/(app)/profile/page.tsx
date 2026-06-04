@@ -57,11 +57,11 @@ export default async function EmergencyProfilePage() {
         description="Manage and persist your emergency medical information securely."
       />
 
-      <div className="mx-auto w-full max-w-6xl px-3 sm:px-0">
-        <div className="grid gap-8 lg:grid-cols-2">
+      <div className="mx-auto w-full min-w-0 max-w-6xl overflow-x-hidden px-3 sm:px-0">
+        <div className="grid min-w-0 gap-6 sm:gap-8 lg:grid-cols-2">
         <section
           id="profile-editor"
-          className="rounded-2xl border border-border bg-surface p-4 sm:p-6"
+          className="min-w-0 rounded-2xl border border-border bg-surface p-4 sm:p-6"
         >
           <h2 className="text-lg font-semibold text-foreground">Profile editor</h2>
           <p className="mt-2 text-sm text-muted">
@@ -84,7 +84,7 @@ export default async function EmergencyProfilePage() {
           </div>
         </section>
 
-        <section>
+        <section className="min-w-0">
           <h2 className="mb-4 text-lg font-semibold text-foreground">
             Preview — public emergency card
           </h2>

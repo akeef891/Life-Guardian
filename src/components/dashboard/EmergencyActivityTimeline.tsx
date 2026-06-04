@@ -63,6 +63,24 @@ function kindStyles(eventKind: EmergencyTimelineEvent["kind"]) {
         badge: "bg-background text-muted border-border",
         label: "Closed",
       };
+    case "check_in_created":
+      return {
+        dot: "bg-teal-600 border-teal-200",
+        badge: "bg-teal-50 text-teal-800 border-teal-200",
+        label: "Check-In",
+      };
+    case "community_alert_viewed":
+      return {
+        dot: "bg-violet-600 border-violet-200",
+        badge: "bg-violet-50 text-violet-800 border-violet-200",
+        label: "Community",
+      };
+    case "resource_opened":
+      return {
+        dot: "bg-sky-600 border-sky-200",
+        badge: "bg-sky-50 text-sky-800 border-sky-200",
+        label: "Resources",
+      };
   }
 }
 

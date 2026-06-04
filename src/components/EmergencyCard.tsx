@@ -20,7 +20,7 @@ export function EmergencyCard({ data, className }: EmergencyCardProps) {
   return (
     <article
       className={cn(
-        "overflow-hidden rounded-2xl border-2 border-emergency bg-background shadow-lg",
+        "min-w-0 overflow-hidden rounded-2xl border-2 border-emergency bg-background shadow-lg",
         className,
       )}
       aria-label={`Emergency information for ${displayName}`}
@@ -47,7 +47,7 @@ export function EmergencyCard({ data, className }: EmergencyCardProps) {
             <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">
               Allergies
             </h3>
-            <p className="mt-1 text-lg font-medium text-foreground">{allergies}</p>
+            <p className="mt-1 break-words text-lg font-medium text-foreground">{allergies}</p>
           </section>
         )}
 
@@ -56,7 +56,7 @@ export function EmergencyCard({ data, className }: EmergencyCardProps) {
             <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">
               Medications
             </h3>
-            <p className="mt-1 text-foreground">{medications}</p>
+            <p className="mt-1 break-words text-foreground">{medications}</p>
           </section>
         )}
 
@@ -65,7 +65,7 @@ export function EmergencyCard({ data, className }: EmergencyCardProps) {
             <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">
               Medical Conditions
             </h3>
-            <p className="mt-1 text-foreground">{medicalConditions}</p>
+            <p className="mt-1 break-words text-foreground">{medicalConditions}</p>
           </section>
         )}
 
@@ -74,7 +74,7 @@ export function EmergencyCard({ data, className }: EmergencyCardProps) {
             <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">
               Additional Notes
             </h3>
-            <p className="mt-1 text-foreground">{notes}</p>
+            <p className="mt-1 break-words text-foreground">{notes}</p>
           </section>
         )}
 
@@ -87,10 +87,10 @@ export function EmergencyCard({ data, className }: EmergencyCardProps) {
               {emergencyContacts.map((contact) => (
                 <li
                   key={`${contact.name}-${contact.phone}`}
-                  className="rounded-lg border border-border bg-surface p-4"
+                  className="min-w-0 rounded-lg border border-border bg-surface p-4"
                 >
-                  <p className="font-semibold text-foreground">{contact.name}</p>
-                  <div className="mt-1 flex items-center gap-2">
+                  <p className="break-words font-semibold text-foreground">{contact.name}</p>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
                     {contact.relationship && (
                       <p className="text-sm text-muted">{contact.relationship}</p>
                     )}
