@@ -97,21 +97,36 @@ export function SOSConfirmationPanel({ confirmation }: SOSConfirmationPanelProps
                   </p>
                   <p className="truncate text-xs text-emerald-700">{link.phone}</p>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <a
-                    href={link.whatsAppUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex min-h-10 flex-1 items-center justify-center rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700 sm:flex-none"
-                  >
-                    WhatsApp
-                  </a>
-                  <a
-                    href={link.smsUrl}
-                    className="inline-flex min-h-10 flex-1 items-center justify-center rounded-lg border border-emerald-300 bg-white px-3 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-50 sm:flex-none"
-                  >
-                    SMS
-                  </a>
+                <div className="flex w-full flex-col gap-2 sm:w-auto">
+                  <div className="flex flex-wrap gap-2">
+                    <a
+                      href={link.whatsAppUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex min-h-10 flex-1 items-center justify-center rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700 sm:flex-none"
+                    >
+                      WhatsApp
+                    </a>
+                    <a
+                      href={link.smsUrl}
+                      className="inline-flex min-h-10 flex-1 items-center justify-center rounded-lg border border-emerald-300 bg-white px-3 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-50 sm:flex-none"
+                    >
+                      SMS
+                    </a>
+                  </div>
+                  {link.responseUrl ? (
+                    <p className="break-all text-[11px] text-emerald-800">
+                      Ack link:{" "}
+                      <a
+                        href={link.responseUrl}
+                        className="font-semibold underline"
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Respond
+                      </a>
+                    </p>
+                  ) : null}
                 </div>
               </li>
             ))}

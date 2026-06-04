@@ -54,22 +54,45 @@ model EmergencyContact {
 }
 
 model SOSAlert {
-  id                 String    @id @default(cuid())
+  id                 String               @id @default(cuid())
   userId             String
-  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  message            String?   @db.Text
-  status             String    @default("ACTIVE")
+  user               User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message            String?              @db.Text
+  status             String               @default("ACTIVE")
+  escalationStatus   String               @default("NONE")
+  escalatedAt        DateTime?
+  closedAt           DateTime?
   latitude           Float?
   longitude          Float?
   accuracy           Float?
   locationAccuracy   Float?
   locationCapturedAt DateTime?
   mapsUrl            String?
-  deliveredCount     Int       @default(0)
-  deliveryStatus     String    @default("PENDING")
-  createdAt          DateTime  @default(now())
+  deliveredCount     Int                  @default(0)
+  deliveryStatus     String               @default("PENDING")
+  createdAt          DateTime             @default(now())
+  responses          SOSContactResponse[]
 
   @@index([userId, createdAt(sort: Desc)])
   @@index([status])
   @@index([deliveryStatus])
+  @@index([escalationStatus])
+}
+
+model SOSContactResponse {
+  id          String   @id @default(cuid())
+  sosAlertId  String
+  sosAlert    SOSAlert @relation(fields: [sosAlertId], references: [id], onDelete: Cascade)
+  contactId   String
+  contactName String
+  token       String   @unique
+  status      String   @default("PENDING")
+  respondedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([sosAlertId, contactId])
+  @@index([sosAlertId])
+  @@index([token])
+  @@index([status])
 }

@@ -1,10 +1,13 @@
 import { EmptyState } from "@/components/ui/EmptyState";
+import { IncidentReportDownload } from "@/components/dashboard/IncidentReportDownload";
 import { formatAccuracyLabel } from "@/lib/geolocation/get-accurate-position";
 import { formatCoordDisplay } from "@/lib/geolocation/format-coords";
+import { SOS_ESCALATION_STATUS } from "@/types/emergency-response";
 
 type SOSHistoryItem = {
   id: string;
   status: string;
+  escalationStatus: string;
   message: string | null;
   latitude: number | null;
   longitude: number | null;
@@ -45,7 +48,9 @@ export function SOSHistoryList({ alerts }: SOSHistoryListProps) {
   return (
     <section className="mt-6 min-w-0 overflow-hidden rounded-2xl border border-border bg-surface p-4 sm:mt-8 sm:p-6">
       <h2 className="text-lg font-semibold text-foreground sm:text-xl">SOS History</h2>
-      <p className="mt-1 text-sm text-muted">Recent SOS events with GPS accuracy and delivery status.</p>
+      <p className="mt-1 text-sm text-muted">
+        Recent SOS events with escalation status and incident reports.
+      </p>
 
       {alerts.length === 0 ? (
         <div className="mt-4">
@@ -61,6 +66,7 @@ export function SOSHistoryList({ alerts }: SOSHistoryListProps) {
             const mapsUrl = alert.mapsUrl;
             const accuracy = alert.locationAccuracy ?? alert.accuracy;
             const capturedLabel = formatCapturedAt(alert.locationCapturedAt);
+            const isEscalated = alert.escalationStatus === SOS_ESCALATION_STATUS.ESCALATED;
 
             return (
               <li
@@ -71,6 +77,11 @@ export function SOSHistoryList({ alerts }: SOSHistoryListProps) {
                   <span className="w-fit rounded-full bg-sos/10 px-2 py-0.5 text-xs font-semibold text-sos">
                     {alert.status}
                   </span>
+                  {isEscalated ? (
+                    <span className="w-fit rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-bold uppercase text-amber-900">
+                      Escalated
+                    </span>
+                  ) : null}
                   <span className="w-fit rounded-full border border-border px-2 py-0.5 text-xs font-medium text-muted">
                     {alert.deliveryStatus}
                   </span>
@@ -82,8 +93,7 @@ export function SOSHistoryList({ alerts }: SOSHistoryListProps) {
                 </div>
 
                 <p className="mt-2 text-xs text-muted">
-                  {alert.deliveredCount} contact{alert.deliveredCount === 1 ? "" : "s"} — WhatsApp/SMS
-                  prepared
+                  {alert.deliveredCount} contact{alert.deliveredCount === 1 ? "" : "s"} notified
                 </p>
 
                 {hasLocation ? (
@@ -122,6 +132,10 @@ export function SOSHistoryList({ alerts }: SOSHistoryListProps) {
                 {alert.message ? (
                   <p className="mt-2 break-words text-sm text-foreground">{alert.message}</p>
                 ) : null}
+
+                <div className="mt-3">
+                  <IncidentReportDownload alertId={alert.id} label="Download incident PDF" />
+                </div>
               </li>
             );
           })}

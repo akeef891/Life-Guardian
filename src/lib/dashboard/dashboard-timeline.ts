@@ -1,3 +1,8 @@
+import {
+  CONTACT_RESPONSE_STATUS,
+  SOS_ESCALATION_STATUS,
+} from "@/types/emergency-response";
+
 type EmergencyProfileLike = {
   id: string;
   updatedAt: Date;
@@ -22,7 +27,11 @@ export type EmergencyTimelineEventKind =
   | "profile_updated"
   | "contact_added"
   | "qr_generated"
-  | "sos_triggered";
+  | "sos_triggered"
+  | "sos_created"
+  | "contact_responded"
+  | "escalation_triggered"
+  | "incident_closed";
 
 export type EmergencyTimelineEvent = {
   id: string;
@@ -32,17 +41,30 @@ export type EmergencyTimelineEvent = {
   at: Date;
 };
 
+type SosAlertTimelineRow = {
+  id: string;
+  createdAt: Date;
+  message: string | null;
+  deliveredCount?: number;
+  deliveryStatus?: string;
+  status: string;
+  escalationStatus: string;
+  escalatedAt: Date | null;
+  closedAt: Date | null;
+  responses: Array<{
+    id: string;
+    contactName: string;
+    status: string;
+    respondedAt: Date | null;
+    updatedAt: Date;
+  }>;
+};
+
 type BuildInput = {
   profile: EmergencyProfileLike | null;
   contacts: EmergencyContactLike[];
   qrToken: string | null;
-  sosAlerts: Array<{
-    id: string;
-    createdAt: Date;
-    message: string | null;
-    deliveredCount?: number;
-    deliveryStatus?: string;
-  }>;
+  sosAlerts: SosAlertTimelineRow[];
 };
 
 function hasAnyProfileContent(profile: EmergencyProfileLike | null): boolean {
@@ -63,6 +85,65 @@ function hasAnyProfileContent(profile: EmergencyProfileLike | null): boolean {
 
 function formatContactLabel(contact: EmergencyContactLike): string {
   return contact.isPrimary ? `${contact.name} (Primary)` : contact.name;
+}
+
+function pushSosAlertEvents(events: EmergencyTimelineEvent[], sos: SosAlertTimelineRow): void {
+  const deliveryNote =
+    sos.deliveredCount != null && sos.deliveredCount > 0
+      ? `${sos.deliveredCount} contact(s) notified.`
+      : "SOS alert logged.";
+
+  events.push({
+    id: `sos_created_${sos.id}`,
+    kind: "sos_created",
+    title: "SOS Created",
+    description: sos.message ? `${sos.message} — ${deliveryNote}` : deliveryNote,
+    at: sos.createdAt,
+  });
+
+  events.push({
+    id: `sos_triggered_${sos.id}`,
+    kind: "sos_triggered",
+    title: "SOS Triggered",
+    description: deliveryNote,
+    at: sos.createdAt,
+  });
+
+  for (const response of sos.responses) {
+    if (response.status === CONTACT_RESPONSE_STATUS.PENDING || !response.respondedAt) {
+      continue;
+    }
+    events.push({
+      id: `contact_responded_${response.id}`,
+      kind: "contact_responded",
+      title: "Contact Responded",
+      description: `${response.contactName} marked as ${response.status}.`,
+      at: response.respondedAt,
+    });
+  }
+
+  if (
+    sos.escalationStatus === SOS_ESCALATION_STATUS.ESCALATED &&
+    sos.escalatedAt
+  ) {
+    events.push({
+      id: `escalation_triggered_${sos.id}`,
+      kind: "escalation_triggered",
+      title: "Escalation Triggered",
+      description: "No contact response received in time. Alert escalated.",
+      at: sos.escalatedAt,
+    });
+  }
+
+  if (sos.status === "CLOSED" && sos.closedAt) {
+    events.push({
+      id: `incident_closed_${sos.id}`,
+      kind: "incident_closed",
+      title: "Incident Closed",
+      description: "All contacts responded or incident was resolved.",
+      at: sos.closedAt,
+    });
+  }
 }
 
 export function buildEmergencyActivityTimeline({
@@ -106,21 +187,10 @@ export function buildEmergencyActivityTimeline({
   }
 
   for (const sos of sosAlerts) {
-    const deliveryNote =
-      sos.deliveredCount != null && sos.deliveredCount > 0
-        ? `${sos.deliveredCount} WhatsApp/SMS link(s) prepared.`
-        : "SOS alert logged.";
-    const desc = sos.message ? `${sos.message} — ${deliveryNote}` : deliveryNote;
-    events.push({
-      id: `sos_triggered_${sos.id}`,
-      kind: "sos_triggered",
-      title: "SOS Triggered",
-      description: desc,
-      at: sos.createdAt,
-    });
+    pushSosAlertEvents(events, sos);
   }
 
   events.sort((a, b) => b.at.getTime() - a.at.getTime());
 
-  return events.slice(0, 20);
+  return events.slice(0, 30);
 }

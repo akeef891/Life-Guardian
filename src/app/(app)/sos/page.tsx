@@ -4,6 +4,7 @@ import { SOSHistoryList } from "@/components/sos/SOSHistoryList";
 import { SOSTriggerPanel } from "@/components/sos/SOSTriggerPanel";
 import { getOrCreateCurrentUserWithProfile } from "@/lib/auth/user-context";
 import { prisma } from "@/lib/db/prisma";
+import { processPendingEscalations } from "@/lib/services/sos-escalation.service";
 
 export const metadata: Metadata = {
   title: "SOS",
@@ -12,6 +13,7 @@ export const metadata: Metadata = {
 
 export default async function SOSPage() {
   const { id: userId } = await getOrCreateCurrentUserWithProfile();
+  await processPendingEscalations(userId);
   const alerts = await prisma.sOSAlert.findMany({
     where: { userId },
     orderBy: { createdAt: "desc" },
@@ -19,6 +21,7 @@ export default async function SOSPage() {
     select: {
       id: true,
       status: true,
+      escalationStatus: true,
       message: true,
       latitude: true,
       longitude: true,

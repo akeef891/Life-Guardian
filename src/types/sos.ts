@@ -33,6 +33,7 @@ export type ContactDeliveryPayload = {
   phone: string;
   whatsAppUrl: string;
   smsUrl: string;
+  responseUrl: string;
 };
 
 export type SosConfirmationDto = {

@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/db/prisma";
 import type { EmergencyContactRecord } from "@/lib/db/prisma-types";
 import {
+  createContactResponsesForAlert,
+} from "@/lib/services/sos-response.service";
+import {
   SOS_STATUS_ACTIVE,
   type CreateSosAlertInput,
   type SosConfirmationDto,
@@ -19,16 +22,7 @@ export async function createSosAlertWithDelivery(
 ): Promise<SosConfirmationDto> {
   const mapsUrl = resolveMapsUrl(input.location);
   const sentAt = new Date();
-  const emergencyMessage = buildSosEmergencyMessage({
-    senderName: input.senderName,
-    message: input.message,
-    mapsUrl,
-    sentAt,
-  });
-
-  const deliveryLinks = prepareContactDeliveryPayloads(input.contacts, emergencyMessage);
   const deliveryStatus = resolveDeliveryStatus(input.contacts.length);
-  const deliveredCount = deliveryLinks.length;
 
   const alert = await prisma.sOSAlert.create({
     data: {
@@ -41,14 +35,32 @@ export async function createSosAlertWithDelivery(
       locationAccuracy: input.location.accuracy,
       locationCapturedAt: input.location.capturedAt,
       mapsUrl,
-      deliveredCount,
+      deliveredCount: input.contacts.length,
       deliveryStatus,
     },
   });
 
+  const responseRecords = await createContactResponsesForAlert(alert.id, input.contacts);
+  const responseUrlByContactId = new Map(
+    responseRecords.map((r) => [r.contactId, r.responseUrl]),
+  );
+
+  const deliveryLinks = prepareContactDeliveryPayloads(
+    input.contacts,
+    (contact) =>
+      buildSosEmergencyMessage({
+        senderName: input.senderName,
+        message: input.message,
+        mapsUrl,
+        sentAt,
+        responseUrl: responseUrlByContactId.get(contact.id) ?? null,
+      }),
+    responseUrlByContactId,
+  );
+
   return {
     alertId: alert.id,
-    contactsNotified: deliveredCount,
+    contactsNotified: deliveryLinks.length,
     locationLabel: formatLocationLabel(input.location),
     mapsUrl,
     latitude: input.location.latitude,

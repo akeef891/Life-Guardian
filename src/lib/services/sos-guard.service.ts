@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import type { EmergencyContactRecord } from "@/lib/db/prisma-types";
+import { buildResponseUrl } from "@/lib/services/sos-response.service";
 import {
   buildSosEmergencyMessage,
   formatLocationLabel,
@@ -60,6 +61,7 @@ function rebuildConfirmationFromAlert(
     createdAt: Date;
   },
   input: RebuildConfirmationInput,
+  responseTokens: Array<{ contactId: string; token: string }>,
 ): SosConfirmationDto {
   const location: SosLocationInput = {
     latitude: alert.latitude,
@@ -68,12 +70,22 @@ function rebuildConfirmationFromAlert(
     capturedAt: alert.createdAt,
   };
   const mapsUrl = alert.mapsUrl ?? resolveMapsUrl(location);
-  const emergencyMessage = buildSosEmergencyMessage({
-    senderName: input.senderName,
-    message: input.message ?? alert.message,
-    mapsUrl,
-    sentAt: alert.createdAt,
-  });
+  const responseUrlByContactId = new Map(
+    responseTokens.map((r) => [r.contactId, buildResponseUrl(r.token)]),
+  );
+
+  const deliveryLinks = prepareContactDeliveryPayloads(
+    input.contacts,
+    (contact) =>
+      buildSosEmergencyMessage({
+        senderName: input.senderName,
+        message: input.message ?? alert.message,
+        mapsUrl,
+        sentAt: alert.createdAt,
+        responseUrl: responseUrlByContactId.get(contact.id) ?? null,
+      }),
+    responseUrlByContactId,
+  );
 
   return {
     alertId: alert.id,
@@ -85,7 +97,7 @@ function rebuildConfirmationFromAlert(
     locationAccuracy: alert.locationAccuracy ?? alert.accuracy,
     sentAt: alert.createdAt.toISOString(),
     deliveryStatus: alert.deliveryStatus as SosConfirmationDto["deliveryStatus"],
-    deliveryLinks: prepareContactDeliveryPayloads(input.contacts, emergencyMessage),
+    deliveryLinks,
   };
 }
 
@@ -114,6 +126,7 @@ export async function findDuplicateSosConfirmation(
       deliveredCount: true,
       deliveryStatus: true,
       createdAt: true,
+      responses: { select: { contactId: true, token: true } },
     },
   });
 
@@ -121,5 +134,5 @@ export async function findDuplicateSosConfirmation(
     return null;
   }
 
-  return rebuildConfirmationFromAlert(recent, input);
+  return rebuildConfirmationFromAlert(recent, input, recent.responses);
 }

@@ -12,6 +12,7 @@ type BuildMessageInput = {
   message: string | null;
   mapsUrl: string | null;
   sentAt: Date;
+  responseUrl?: string | null;
 };
 
 function formatAlertTime(sentAt: Date): string {
@@ -45,9 +46,13 @@ export function buildSosEmergencyMessage(input: BuildMessageInput): string {
     "",
     "Time:",
     timeLine,
-    "",
-    "Please contact immediately.",
   );
+
+  if (input.responseUrl) {
+    lines.push("", "Acknowledge this alert:", input.responseUrl);
+  }
+
+  lines.push("", "Please contact immediately.");
 
   return lines.join("\n");
 }
@@ -68,15 +73,21 @@ export function buildSmsUrl(phone: string, message: string): string {
 
 export function prepareContactDeliveryPayloads(
   contacts: EmergencyContactRecord[],
-  message: string,
+  buildMessageForContact: (contact: EmergencyContactRecord) => string,
+  responseUrlByContactId: Map<string, string>,
 ): ContactDeliveryPayload[] {
-  return contacts.map((contact) => ({
-    contactId: contact.id,
-    contactName: contact.name,
-    phone: contact.phone,
-    whatsAppUrl: buildWhatsAppUrl(contact.phone, message),
-    smsUrl: buildSmsUrl(contact.phone, message),
-  }));
+  return contacts.map((contact) => {
+    const message = buildMessageForContact(contact);
+    const responseUrl = responseUrlByContactId.get(contact.id) ?? "";
+    return {
+      contactId: contact.id,
+      contactName: contact.name,
+      phone: contact.phone,
+      whatsAppUrl: buildWhatsAppUrl(contact.phone, message),
+      smsUrl: buildSmsUrl(contact.phone, message),
+      responseUrl,
+    };
+  });
 }
 
 export function resolveMapsUrl(location: SosLocationInput): string | null {

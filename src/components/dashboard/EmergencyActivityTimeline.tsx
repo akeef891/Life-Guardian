@@ -39,10 +39,29 @@ function kindStyles(eventKind: EmergencyTimelineEvent["kind"]) {
         label: "QR",
       };
     case "sos_triggered":
+    case "sos_created":
       return {
         dot: "bg-red-600 border-red-200",
         badge: "bg-red-50 text-red-700 border-red-200",
         label: "SOS",
+      };
+    case "contact_responded":
+      return {
+        dot: "bg-emerald-600 border-emerald-200",
+        badge: "bg-emerald-50 text-emerald-800 border-emerald-200",
+        label: "Response",
+      };
+    case "escalation_triggered":
+      return {
+        dot: "bg-amber-500 border-amber-200",
+        badge: "bg-amber-50 text-amber-900 border-amber-200",
+        label: "Escalation",
+      };
+    case "incident_closed":
+      return {
+        dot: "bg-muted border-border",
+        badge: "bg-background text-muted border-border",
+        label: "Closed",
       };
   }
 }
