@@ -4,12 +4,8 @@ import { revalidatePath } from "next/cache";
 import { ROUTES } from "@/lib/constants/routes";
 import { getOrCreateCurrentUserWithProfile } from "@/lib/auth/user-context";
 import { prisma } from "@/lib/db/prisma";
-
-export type SaveProfileState = {
-  success: boolean;
-  message?: string;
-  error?: string;
-};
+import { logServerError } from "@/lib/logging/server-error";
+import type { SaveProfileState } from "./types";
 
 function toNullable(value: FormDataEntryValue | null) {
   if (typeof value !== "string") {
@@ -61,12 +57,13 @@ export async function saveEmergencyProfile(
 
     return {
       success: true,
-      message: "Emergency profile saved successfully.",
+      message: "Profile saved successfully.",
     };
-  } catch {
+  } catch (error) {
+    logServerError("saveEmergencyProfile", error);
     return {
       success: false,
-      error: "Unable to save emergency profile. Please try again.",
+      error: "Failed to save profile. Please try again.",
     };
   }
 }

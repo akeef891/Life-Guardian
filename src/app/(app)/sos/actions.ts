@@ -3,12 +3,17 @@
 import { revalidatePath } from "next/cache";
 import { getOrCreateCurrentUserWithProfile } from "@/lib/auth/user-context";
 import { ROUTES } from "@/lib/constants/routes";
+import { logServerError } from "@/lib/logging/server-error";
 import {
   createSosAlertWithDelivery,
   isValidSosCoordinates,
   parseSosLocationFromForm,
   resolveSenderName,
 } from "@/lib/services/sos-alert.service";
+import {
+  checkSosRateLimit,
+  findDuplicateSosConfirmation,
+} from "@/lib/services/sos-guard.service";
 import type { TriggerSosState } from "@/types/sos";
 
 function toNullable(value: FormDataEntryValue | null): string | null {
@@ -38,6 +43,34 @@ export async function triggerSOSAction(
 
     const senderName = resolveSenderName(profile?.displayName, firstName, email);
 
+    const duplicate = await findDuplicateSosConfirmation(userId, {
+      senderName,
+      message,
+      location,
+      contacts,
+    });
+    if (duplicate) {
+      revalidatePath(ROUTES.sos);
+      revalidatePath(ROUTES.dashboard);
+      return {
+        success: true,
+        message: "SOS alert is already active.",
+        confirmation: duplicate,
+      };
+    }
+
+    const rateLimit = await checkSosRateLimit(userId);
+    if (!rateLimit.allowed) {
+      const waitHint =
+        rateLimit.retryAfterSeconds > 0
+          ? ` Try again in ${rateLimit.retryAfterSeconds} seconds.`
+          : "";
+      return {
+        success: false,
+        error: `${rateLimit.error}${waitHint}`,
+      };
+    }
+
     const confirmation = await createSosAlertWithDelivery({
       userId,
       message,
@@ -51,15 +84,14 @@ export async function triggerSOSAction(
 
     return {
       success: true,
-      message: "SOS alert has been activated successfully.",
+      message: "SOS triggered successfully.",
       confirmation,
     };
-  } catch {
+  } catch (error) {
+    logServerError("triggerSOSAction", error);
     return {
       success: false,
-      error: "Unable to trigger SOS at the moment. Please try again.",
+      error: "Failed to trigger SOS. Please check your connection and try again.",
     };
   }
 }
-
-export type { TriggerSosState } from "@/types/sos";

@@ -29,10 +29,10 @@ export function EmergencyCard({ data, className }: EmergencyCardProps) {
         <p className="text-xs font-medium uppercase tracking-wider opacity-90">
           Emergency Medical Information
         </p>
-        <h2 className="mt-1 text-2xl font-bold">{displayName}</h2>
+        <h2 className="mt-1 break-words text-xl font-bold sm:text-2xl">{displayName}</h2>
       </header>
 
-      <div className="space-y-6 p-6">
+      <div className="space-y-6 p-4 sm:p-6">
         {bloodType && (
           <section>
             <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">
@@ -102,7 +102,7 @@ export function EmergencyCard({ data, className }: EmergencyCardProps) {
                   </div>
                   <a
                     href={`tel:${contact.phone.replace(/\s/g, "")}`}
-                    className="mt-2 inline-block text-lg font-medium text-brand hover:underline"
+                    className="mt-2 inline-flex min-h-11 items-center text-lg font-medium text-brand hover:underline focus:outline-none focus:ring-4 focus:ring-brand/25"
                   >
                     {contact.phone}
                   </a>

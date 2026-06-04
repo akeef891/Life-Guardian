@@ -1,4 +1,6 @@
 import type { EmergencyTimelineEvent } from "@/lib/dashboard/dashboard-timeline";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { ROUTES } from "@/lib/constants/routes";
 import { DashboardCard } from "./DashboardCard";
 
 type Props = {
@@ -57,12 +59,13 @@ export function EmergencyActivityTimeline({ events }: Props) {
       </div>
 
       {events.length === 0 ? (
-        <div className="mt-6 rounded-xl border border-dashed border-border bg-background p-5">
-          <p className="text-sm font-medium text-foreground">No activity yet</p>
-          <p className="mt-1 text-sm text-muted">
-            Update your profile, add contacts, generate a QR card, or trigger an SOS to build
-            your timeline.
-          </p>
+        <div className="mt-6">
+          <EmptyState
+            title="No activity yet"
+            description="Update your profile, add contacts, generate a QR card, or trigger an SOS to build your timeline."
+            actionLabel="Complete profile"
+            actionHref={ROUTES.profile}
+          />
         </div>
       ) : (
         <ol className="relative mt-6 space-y-0 border-l border-border pl-4 sm:pl-6">

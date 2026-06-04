@@ -1,3 +1,4 @@
+import { EmptyState } from "@/components/ui/EmptyState";
 import { formatAccuracyLabel } from "@/lib/geolocation/get-accurate-position";
 import { formatCoordDisplay } from "@/lib/geolocation/format-coords";
 
@@ -47,9 +48,12 @@ export function SOSHistoryList({ alerts }: SOSHistoryListProps) {
       <p className="mt-1 text-sm text-muted">Recent SOS events with GPS accuracy and delivery status.</p>
 
       {alerts.length === 0 ? (
-        <p className="mt-4 rounded-lg border border-dashed border-border bg-background px-4 py-3 text-sm text-muted">
-          No SOS events yet.
-        </p>
+        <div className="mt-4">
+          <EmptyState
+            title="No SOS history"
+            description="No SOS alerts have been triggered."
+          />
+        </div>
       ) : (
         <ul className="mt-4 space-y-3">
           {alerts.map((alert) => {

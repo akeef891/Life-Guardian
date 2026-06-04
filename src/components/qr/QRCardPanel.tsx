@@ -2,21 +2,26 @@
 
 import { useActionState, useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
-import {
-  generateQrTokenAction,
-  type GenerateQrState,
-} from "@/app/(app)/qr-card/actions";
+import { generateQrTokenAction } from "@/app/(app)/qr-card/actions";
+import { GENERATE_QR_INITIAL_STATE } from "@/app/(app)/qr-card/types";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { useActionStateToast } from "@/components/ui/toast/useActionStateToast";
+import { useToast } from "@/components/ui/toast/ToastProvider";
 
 type QRCardPanelProps = {
   emergencyUrl: string | null;
   appBaseUrl: string;
 };
 
-const initialState: GenerateQrState = { success: false };
-
 export function QRCardPanel({ emergencyUrl, appBaseUrl }: QRCardPanelProps) {
-  const [state, formAction, isPending] = useActionState(generateQrTokenAction, initialState);
+  const [state, formAction, isPending] = useActionState(
+    generateQrTokenAction,
+    GENERATE_QR_INITIAL_STATE,
+  );
+  const { success: toastSuccess, error: toastError } = useToast();
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+
+  useActionStateToast(state);
   const effectiveUrl = useMemo(
     () => (state.token ? null : emergencyUrl),
     [state.token, emergencyUrl],
@@ -39,12 +44,14 @@ export function QRCardPanel({ emergencyUrl, appBaseUrl }: QRCardPanelProps) {
 
   function handleDownload() {
     if (!qrDataUrl) {
+      toastError("Generate your emergency QR card before downloading.");
       return;
     }
     const link = document.createElement("a");
     link.href = qrDataUrl;
     link.download = "life-guardian-emergency-qr.png";
     link.click();
+    toastSuccess("QR downloaded successfully.");
   }
 
   return (
@@ -56,12 +63,11 @@ export function QRCardPanel({ emergencyUrl, appBaseUrl }: QRCardPanelProps) {
           className="h-56 w-56 rounded-xl border border-border bg-white p-2"
         />
       ) : (
-        <div
-          className="flex h-56 w-56 items-center justify-center rounded-xl border-2 border-dashed border-border bg-background text-center text-sm text-muted"
-          role="img"
-          aria-label="QR code placeholder"
-        >
-          Generate your QR card
+        <div className="h-56 w-56">
+          <EmptyState
+            title="No QR generated yet"
+            description="Generate your emergency QR card using the button below."
+          />
         </div>
       )}
 
@@ -70,13 +76,8 @@ export function QRCardPanel({ emergencyUrl, appBaseUrl }: QRCardPanelProps) {
       </p>
 
       {state.error ? (
-        <p className="mt-4 w-full rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="sr-only" role="alert">
           {state.error}
-        </p>
-      ) : null}
-      {state.message ? (
-        <p className="mt-4 w-full rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-          {state.message}
         </p>
       ) : null}
 
@@ -85,7 +86,7 @@ export function QRCardPanel({ emergencyUrl, appBaseUrl }: QRCardPanelProps) {
           <button
             type="submit"
             disabled={isPending}
-            className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex min-h-11 items-center justify-center rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-dark focus:outline-none focus:ring-4 focus:ring-brand/30 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isPending ? "Generating..." : "Generate QR"}
           </button>
@@ -95,7 +96,7 @@ export function QRCardPanel({ emergencyUrl, appBaseUrl }: QRCardPanelProps) {
           type="button"
           onClick={handleDownload}
           disabled={!qrDataUrl}
-          className="rounded-lg border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-background disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex min-h-11 items-center justify-center rounded-lg border border-border px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-background focus:outline-none focus:ring-4 focus:ring-brand/20 disabled:cursor-not-allowed disabled:opacity-60"
         >
           Download QR
         </button>

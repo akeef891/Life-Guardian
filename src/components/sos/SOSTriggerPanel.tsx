@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { triggerSOSAction } from "@/app/(app)/sos/actions";
 import { SOSConfirmationPanel } from "@/components/sos/SOSConfirmationPanel";
+import { useActionStateToast } from "@/components/ui/toast/useActionStateToast";
 import { getAccuratePosition } from "@/lib/geolocation/get-accurate-position";
 import { TRIGGER_SOS_INITIAL_STATE, type TriggerSosState } from "@/types/sos";
 
@@ -21,10 +22,19 @@ export function SOSTriggerPanel() {
     | "failed"
   >("idle");
   const formRef = useRef<HTMLFormElement>(null);
+  const [submitLocked, setSubmitLocked] = useState(false);
   const latitudeRef = useRef<HTMLInputElement>(null);
   const longitudeRef = useRef<HTMLInputElement>(null);
   const accuracyRef = useRef<HTMLInputElement>(null);
   const capturedAtRef = useRef<HTMLInputElement>(null);
+
+  useActionStateToast(state);
+
+  useEffect(() => {
+    if (!isPending) {
+      setSubmitLocked(false);
+    }
+  }, [isPending]);
 
   function setLocationValues(
     latitude: number | null,
@@ -57,6 +67,10 @@ export function SOSTriggerPanel() {
   }
 
   async function triggerSOSWithLocation() {
+    if (submitLocked || isPending || isLocating) {
+      return;
+    }
+    setSubmitLocked(true);
     setGeoStatus("getting-location");
 
     const result = await getAccuratePosition();
@@ -82,21 +96,27 @@ export function SOSTriggerPanel() {
     <div className="min-w-0 space-y-4 overflow-x-hidden">
       {state.confirmation ? <SOSConfirmationPanel confirmation={state.confirmation} /> : null}
 
-    <section className="mx-auto flex w-full min-w-0 max-w-xl flex-col overflow-hidden rounded-2xl border border-border bg-surface p-4 sm:p-6 md:p-8">
-      <h2 className="text-lg font-semibold text-foreground sm:text-xl">Trigger SOS</h2>
+    <section
+      className="mx-auto flex w-full min-w-0 max-w-xl flex-col overflow-hidden rounded-2xl border border-border bg-surface p-4 sm:p-6 md:p-8"
+      aria-labelledby="sos-trigger-heading"
+    >
+      <h2 id="sos-trigger-heading" className="text-lg font-semibold text-foreground sm:text-xl">
+        Trigger SOS
+      </h2>
       <p className="mt-1 text-sm text-muted">
         High-accuracy GPS (15s timeout). Retries once if accuracy is worse than 100m. Prepares
         WhatsApp and SMS alerts for all emergency contacts.
       </p>
 
-        <form ref={formRef} action={formAction} className="mt-5 space-y-4 sm:mt-6">
+        <form ref={formRef} action={formAction} className="mt-5 space-y-4 sm:mt-6" aria-busy={isPending}>
           <label className="block space-y-1.5">
             <span className="text-sm font-medium text-foreground">Message (optional)</span>
             <textarea
               name="message"
               rows={3}
               placeholder="Describe your emergency briefly"
-              className="w-full resize-y rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none ring-brand/20 focus:ring-4"
+              aria-label="Optional SOS message"
+              className="w-full min-h-11 resize-y rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none ring-brand/20 focus:ring-4"
             />
           </label>
 
@@ -106,13 +126,8 @@ export function SOSTriggerPanel() {
           <input ref={capturedAtRef} type="hidden" name="locationCapturedAt" />
 
           {state.error ? (
-            <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            <p className="sr-only" role="alert">
               {state.error}
-            </p>
-          ) : null}
-          {state.message && !state.confirmation ? (
-            <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-              {state.message}
             </p>
           ) : null}
           {isLocating ? (
@@ -150,8 +165,9 @@ export function SOSTriggerPanel() {
           <button
             type="button"
             onClick={triggerSOSWithLocation}
-            disabled={isPending || isLocating}
-            className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-sos px-6 text-sm font-semibold uppercase tracking-wide text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+            disabled={submitLocked || isPending || isLocating}
+            aria-label="Trigger SOS alert with current location"
+            className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-sos px-6 py-3 text-sm font-semibold uppercase tracking-wide text-white transition-colors hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-300 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
           >
             {isPending ? "Triggering..." : isLocating ? "Getting location..." : "Trigger SOS"}
           </button>

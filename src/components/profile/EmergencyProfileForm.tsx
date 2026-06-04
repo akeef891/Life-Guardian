@@ -1,7 +1,9 @@
 "use client";
 
 import { useActionState } from "react";
-import { saveEmergencyProfile, type SaveProfileState } from "@/app/(app)/profile/actions";
+import { saveEmergencyProfile } from "@/app/(app)/profile/actions";
+import type { SaveProfileState } from "@/app/(app)/profile/types";
+import { useActionStateToast } from "@/components/ui/toast/useActionStateToast";
 
 type EmergencyProfileFormValues = {
   displayName: string;
@@ -25,8 +27,10 @@ const initialState: SaveProfileState = { success: false };
 export function EmergencyProfileForm({ initialValues }: EmergencyProfileFormProps) {
   const [state, formAction, isPending] = useActionState(saveEmergencyProfile, initialState);
 
+  useActionStateToast(state);
+
   return (
-    <form action={formAction} className="space-y-5">
+    <form action={formAction} className="space-y-5" aria-busy={isPending}>
       <div className="grid gap-5 sm:grid-cols-2">
         <label className="space-y-2">
           <span className="text-sm font-medium text-foreground">Display name</span>
@@ -122,21 +126,15 @@ export function EmergencyProfileForm({ initialValues }: EmergencyProfileFormProp
       </label>
 
       {state.error ? (
-        <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="sr-only" role="alert">
           {state.error}
-        </p>
-      ) : null}
-
-      {state.message ? (
-        <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-          {state.message}
         </p>
       ) : null}
 
       <button
         type="submit"
         disabled={isPending}
-        className="inline-flex h-11 items-center justify-center rounded-lg bg-brand px-5 text-sm font-semibold text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-70"
+        className="inline-flex min-h-11 items-center justify-center rounded-lg bg-brand px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-dark focus:outline-none focus:ring-4 focus:ring-brand/30 disabled:cursor-not-allowed disabled:opacity-70"
       >
         {isPending ? "Saving..." : "Save Emergency Profile"}
       </button>

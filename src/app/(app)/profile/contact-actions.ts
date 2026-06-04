@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { getOrCreateCurrentUserWithProfile } from "@/lib/auth/user-context";
 import { ROUTES } from "@/lib/constants/routes";
 import { prisma } from "@/lib/db/prisma";
+import { logServerError } from "@/lib/logging/server-error";
+import type { ContactActionState } from "./types";
 
 type Id = string;
 
@@ -57,20 +59,24 @@ async function getOwnedProfileId(): Promise<Id | null> {
   return profile.id;
 }
 
-export async function createEmergencyContact(formData: FormData): Promise<void> {
+export async function createEmergencyContact(
+  _prev: ContactActionState,
+  formData: FormData,
+): Promise<ContactActionState> {
+  try {
   const profileId = await getOwnedProfileId();
   if (!profileId) {
-    return;
+    return { success: false, error: "Profile not found." };
   }
   const { name, relationship, phoneInput, isPrimary } = readContactFormValues(formData);
 
   if (!name || !phoneInput) {
-    return;
+    return { success: false, error: "Name and phone are required." };
   }
 
   const phone = normalizePhone(phoneInput);
   if (!validatePhone(phone)) {
-    return;
+    return { success: false, error: "Use international phone format, e.g. +15551234567." };
   }
 
   await prisma.$transaction(async (tx: TransactionClient) => {
@@ -99,34 +105,42 @@ export async function createEmergencyContact(formData: FormData): Promise<void> 
 
   revalidatePath(ROUTES.profile);
   revalidatePath(ROUTES.dashboard);
+  return { success: true, message: "Contact added successfully." };
+  } catch (error) {
+    logServerError("createEmergencyContact", error);
+    return { success: false, error: "Failed to add contact. Please try again." };
+  }
 }
 
-export async function updateEmergencyContact(formData: FormData): Promise<void> {
+export async function updateEmergencyContact(
+  _prev: ContactActionState,
+  formData: FormData,
+): Promise<ContactActionState> {
+  try {
   const profileId = await getOwnedProfileId();
   if (!profileId) {
-    return;
+    return { success: false, error: "Profile not found." };
   }
   const { contactId, name, relationship, phoneInput, isPrimary } = readContactFormValues(formData);
 
   if (!contactId || !name || !phoneInput) {
-    return;
+    return { success: false, error: "Name and phone are required." };
   }
 
   const phone = normalizePhone(phoneInput);
   if (!validatePhone(phone)) {
-    return;
+    return { success: false, error: "Use international phone format, e.g. +15551234567." };
+  }
+
+  const owned = await prisma.emergencyContact.findFirst({
+    where: { id: contactId, profileId },
+    select: { id: true },
+  });
+  if (!owned) {
+    return { success: false, error: "Contact not found." };
   }
 
   await prisma.$transaction(async (tx: TransactionClient) => {
-    const existing: ContactIdSelection | null = await tx.emergencyContact.findFirst({
-      where: { id: contactId, profileId },
-      select: { id: true },
-    });
-
-    if (!existing) {
-      return;
-    }
-
     if (isPrimary) {
       await tx.emergencyContact.updateMany({
         where: { profileId },
@@ -166,31 +180,37 @@ export async function updateEmergencyContact(formData: FormData): Promise<void> 
 
   revalidatePath(ROUTES.profile);
   revalidatePath(ROUTES.dashboard);
+  return { success: true, message: "Contact updated successfully." };
+  } catch (error) {
+    logServerError("updateEmergencyContact", error);
+    return { success: false, error: "Failed to update contact. Please try again." };
+  }
 }
 
-export async function deleteEmergencyContact(formData: FormData): Promise<void> {
+export async function deleteEmergencyContact(
+  _prev: ContactActionState,
+  formData: FormData,
+): Promise<ContactActionState> {
+  try {
   const profileId = await getOwnedProfileId();
   if (!profileId) {
-    return;
+    return { success: false, error: "Profile not found." };
   }
   const { contactId } = readContactFormValues(formData);
   if (!contactId) {
-    return;
+    return { success: false, error: "Contact not found." };
+  }
+
+  const existing: ContactPrimarySelection | null = await prisma.emergencyContact.findFirst({
+    where: { id: contactId, profileId },
+    select: { id: true, isPrimary: true },
+  });
+  if (!existing) {
+    return { success: false, error: "Contact not found." };
   }
 
   await prisma.$transaction(async (tx: TransactionClient) => {
-    const existing: ContactPrimarySelection | null = await tx.emergencyContact.findFirst({
-      where: { id: contactId, profileId },
-      select: { id: true, isPrimary: true },
-    });
-
-    if (!existing) {
-      return;
-    }
-
-    await tx.emergencyContact.delete({
-      where: { id: contactId },
-    });
+    await tx.emergencyContact.delete({ where: { id: contactId } });
 
     if (existing.isPrimary) {
       const next: ContactIdSelection | null = await tx.emergencyContact.findFirst({
@@ -209,4 +229,9 @@ export async function deleteEmergencyContact(formData: FormData): Promise<void> 
 
   revalidatePath(ROUTES.profile);
   revalidatePath(ROUTES.dashboard);
+  return { success: true, message: "Contact deleted successfully." };
+  } catch (error) {
+    logServerError("deleteEmergencyContact", error);
+    return { success: false, error: "Failed to delete contact. Please try again." };
+  }
 }

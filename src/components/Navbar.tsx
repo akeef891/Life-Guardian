@@ -29,7 +29,7 @@ export function Navbar({ variant = "marketing" }: NavbarProps) {
             <Link
               key={link.href + link.label}
               href={link.href}
-              className="rounded-lg px-3.5 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface hover:text-foreground"
+              className="rounded-lg px-3.5 py-2.5 text-sm font-medium text-muted transition-colors hover:bg-surface hover:text-foreground focus:outline-none focus:ring-4 focus:ring-brand/25"
             >
               {link.label}
             </Link>
@@ -64,7 +64,7 @@ export function Navbar({ variant = "marketing" }: NavbarProps) {
             <Link
               key={link.href}
               href={link.href}
-              className="shrink-0 rounded-md px-3 py-1.5 text-xs font-medium text-muted hover:bg-surface hover:text-foreground"
+              className="inline-flex min-h-11 shrink-0 items-center rounded-md px-3 py-2 text-xs font-medium text-muted hover:bg-surface hover:text-foreground focus:outline-none focus:ring-4 focus:ring-brand/25"
             >
               {link.label}
             </Link>

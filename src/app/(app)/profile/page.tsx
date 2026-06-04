@@ -4,7 +4,12 @@ import { PageHeader } from "@/components/PageHeader";
 import { EmergencyContactsManager } from "@/components/profile/EmergencyContactsManager";
 import { EmergencyProfileForm } from "@/components/profile/EmergencyProfileForm";
 import { getOrCreateCurrentUserWithProfile } from "@/lib/auth/user-context";
-import type { EmergencyContactRecord } from "@/lib/db/prisma-types";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { ROUTES } from "@/lib/constants/routes";
+import type {
+  EmergencyContactRecord,
+  EmergencyProfileWithContacts,
+} from "@/lib/db/prisma-types";
 
 export const metadata: Metadata = {
   title: "Emergency Profile",
@@ -16,6 +21,19 @@ function formatDate(value: Date | null | undefined) {
     return "";
   }
   return value.toISOString().split("T")[0];
+}
+
+function profileHasMedicalData(profile: EmergencyProfileWithContacts | null): boolean {
+  if (!profile) {
+    return false;
+  }
+  return Boolean(
+    profile.bloodType ||
+      profile.allergies ||
+      profile.medications ||
+      profile.medicalConditions ||
+      profile.notes,
+  );
 }
 
 function toEmergencyCardContact(contact: EmergencyContactRecord) {
@@ -41,7 +59,10 @@ export default async function EmergencyProfilePage() {
 
       <div className="mx-auto w-full max-w-6xl px-3 sm:px-0">
         <div className="grid gap-8 lg:grid-cols-2">
-        <section className="rounded-2xl border border-border bg-surface p-6">
+        <section
+          id="profile-editor"
+          className="rounded-2xl border border-border bg-surface p-4 sm:p-6"
+        >
           <h2 className="text-lg font-semibold text-foreground">Profile editor</h2>
           <p className="mt-2 text-sm text-muted">
             Data is saved to PostgreSQL and will remain after refresh.
@@ -67,6 +88,16 @@ export default async function EmergencyProfilePage() {
           <h2 className="mb-4 text-lg font-semibold text-foreground">
             Preview — public emergency card
           </h2>
+          {!profileHasMedicalData(profile) ? (
+            <div className="mb-4">
+              <EmptyState
+                title="Medical details incomplete"
+                description="Complete your emergency profile."
+                actionLabel="Edit profile"
+                actionHref={`${ROUTES.profile}#profile-editor`}
+              />
+            </div>
+          ) : null}
           <EmergencyCard
             data={{
               displayName,
