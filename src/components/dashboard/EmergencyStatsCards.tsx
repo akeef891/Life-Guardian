@@ -1,3 +1,4 @@
+import { LocalDateTime } from "@/components/datetime/LocalDateTime";
 import { ContactsIcon, QrIcon, ReadinessIcon, SosIcon } from "./DashboardIcons";
 import { DashboardCard } from "./DashboardCard";
 
@@ -31,21 +32,9 @@ type EmergencyStatsCardsProps = {
   readinessLabel: string;
   contactsCount: number;
   sosCount: number;
-  lastSosAt: Date | null;
+  lastSosAt: Date | string | null;
   qrEnabled: boolean;
 };
-
-function formatLastSos(value: Date | null): string {
-  if (!value) {
-    return "Never";
-  }
-  return value.toLocaleString([], {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 function readinessTone(score: number): StatusPillProps["tone"] {
   if (score >= 80) {
@@ -113,7 +102,10 @@ export function EmergencyStatsCards({
             </div>
             <p className="text-2xl font-bold text-foreground">{sosCount}</p>
           </div>
-          <p className="mt-2 truncate text-sm text-muted">Last SOS: {formatLastSos(lastSosAt)}</p>
+          <p className="mt-2 truncate text-sm text-muted">
+            Last SOS:{" "}
+            {lastSosAt ? <LocalDateTime value={lastSosAt} mode="datetime" /> : "Never"}
+          </p>
         </div>
       </DashboardCard>
 

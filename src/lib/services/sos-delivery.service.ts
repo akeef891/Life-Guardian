@@ -1,4 +1,5 @@
 import { buildGoogleMapsUrl } from "@/lib/geolocation/get-accurate-position";
+import { formatSosDateTime } from "@/lib/datetime/format-datetime";
 import type { EmergencyContactRecord } from "@/lib/db/prisma-types";
 import {
   SOS_DELIVERY_STATUS,
@@ -13,21 +14,16 @@ type BuildMessageInput = {
   mapsUrl: string | null;
   sentAt: Date;
   responseUrl?: string | null;
+  clientTimeZone?: string | null;
 };
 
-function formatAlertTime(sentAt: Date): string {
-  return sentAt.toLocaleString([], {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+function formatAlertTime(sentAt: Date, clientTimeZone?: string | null): string {
+  return formatSosDateTime(sentAt, clientTimeZone);
 }
 
 export function buildSosEmergencyMessage(input: BuildMessageInput): string {
   const locationLine = input.mapsUrl ?? "Location unavailable";
-  const timeLine = formatAlertTime(input.sentAt);
+  const timeLine = formatAlertTime(input.sentAt, input.clientTimeZone);
 
   const lines = [
     "\u{1F6A8} LIFE GUARDIAN EMERGENCY ALERT",

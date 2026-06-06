@@ -1,5 +1,5 @@
 import type { EmergencyTimelineEvent } from "@/lib/dashboard/dashboard-timeline";
-import { formatRelativeTime } from "@/lib/dashboard/format-relative-time";
+import { LocalRelativeTime } from "@/components/datetime/LocalRelativeTime";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ROUTES } from "@/lib/constants/routes";
 import { DashboardCard } from "./DashboardCard";
@@ -7,16 +7,6 @@ import { DashboardCard } from "./DashboardCard";
 type Props = {
   events: EmergencyTimelineEvent[];
 };
-
-function formatTime(at: Date) {
-  return at.toLocaleString([], {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 function kindStyles(eventKind: EmergencyTimelineEvent["kind"]) {
   switch (eventKind) {
@@ -137,13 +127,10 @@ export function EmergencyActivityTimeline({ events }: Props) {
                       </span>
                       <p className="text-sm font-semibold text-foreground">{event.title}</p>
                     </div>
-                    <time
+                    <LocalRelativeTime
+                      value={event.at}
                       className="shrink-0 text-xs text-muted sm:text-right"
-                      dateTime={event.at.toISOString()}
-                      title={formatTime(event.at)}
-                    >
-                      {formatRelativeTime(event.at)}
-                    </time>
+                    />
                   </div>
                   {event.description ? (
                     <p className="mt-2 break-words text-sm text-muted">{event.description}</p>

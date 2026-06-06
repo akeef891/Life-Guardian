@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState, useRef } from "react";
-import { submitSafetyCheckIn } from "@/app/(app)/check-in/actions";
+import { LocalDateTime } from "@/components/datetime/LocalDateTime";
+ import { submitSafetyCheckIn } from "@/app/(app)/check-in/actions";
 import { CHECK_IN_INITIAL_STATE } from "@/app/(app)/check-in/types";
 import { useActionStateToast } from "@/components/ui/toast/useActionStateToast";
 import { useLocale } from "@/components/i18n/LocaleProvider";
@@ -46,7 +47,11 @@ export function SafetyCheckInPanel({ latestStatus, latestAt }: SafetyCheckInPane
             {t.checkIn.latest}
           </p>
           <p className="mt-1 text-sm font-semibold text-foreground">{latestStatus}</p>
-          {latestAt ? <p className="mt-1 text-xs text-muted">{latestAt}</p> : null}
+          {latestAt ? (
+            <p className="mt-1 text-xs text-muted">
+              <LocalDateTime value={latestAt} mode="datetime" />
+            </p>
+          ) : null}
         </div>
       ) : null}
 

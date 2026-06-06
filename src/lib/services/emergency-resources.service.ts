@@ -18,21 +18,34 @@ export type NearbyResourcesResult = {
   userLatitude: number;
   userLongitude: number;
   unavailable?: boolean;
+  meta?: NearbyResourcesMeta;
+};
+
+export type NearbyResourcesMeta = {
+  durationMs: number;
+  elementCount: number;
+  endpoint?: string;
+  attempts: number;
 };
 
 const EARTH_RADIUS_KM = 6371;
-const DEFAULT_RADIUS_M = 8000;
+export const DEFAULT_RADIUS_M = 12_000;
 const MAX_PER_TYPE = 12;
-const FETCH_TIMEOUT_MS = 12_000;
+const FETCH_TIMEOUT_MS = 18_000;
+const RETRY_DELAY_MS = 600;
+const MAX_ATTEMPTS_PER_ENDPOINT = 2;
 const LOG_PREFIX = "[emergency-resources]";
 
 const OVERPASS_ENDPOINTS = [
   "https://overpass-api.de/api/interpreter",
   "https://overpass.kumi.systems/api/interpreter",
+  "https://overpass.openstreetmap.fr/api/interpreter",
 ];
 
 const NOMINATIM_REVERSE =
   "https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lon}";
+
+const OVERPASS_USER_AGENT = "LifeGuardian/1.0 (emergency-app; contact@lifeguardian.app)";
 
 type OverpassElement = {
   type: string;
@@ -86,17 +99,25 @@ function formatAddress(tags: Record<string, string> | undefined): string {
 
 function buildOverpassQuery(lat: number, lon: number, radiusM: number): string {
   return `
-[out:json][timeout:25];
+[out:json][timeout:15];
 (
   node["amenity"="hospital"](around:${radiusM},${lat},${lon});
   way["amenity"="hospital"](around:${radiusM},${lat},${lon});
+  relation["amenity"="hospital"](around:${radiusM},${lat},${lon});
+  node["healthcare"="hospital"](around:${radiusM},${lat},${lon});
+  way["healthcare"="hospital"](around:${radiusM},${lat},${lon});
   node["amenity"="police"](around:${radiusM},${lat},${lon});
   way["amenity"="police"](around:${radiusM},${lat},${lon});
+  node["amenity"="police_station"](around:${radiusM},${lat},${lon});
+  way["amenity"="police_station"](around:${radiusM},${lat},${lon});
   node["emergency"="ambulance_station"](around:${radiusM},${lat},${lon});
   way["emergency"="ambulance_station"](around:${radiusM},${lat},${lon});
+  node["healthcare"="ambulance_station"](around:${radiusM},${lat},${lon});
+  way["healthcare"="ambulance_station"](around:${radiusM},${lat},${lon});
   node["amenity"="clinic"]["emergency"="yes"](around:${radiusM},${lat},${lon});
+  way["amenity"="clinic"]["emergency"="yes"](around:${radiusM},${lat},${lon});
 );
-out center ${MAX_PER_TYPE * 3};
+out center ${MAX_PER_TYPE * 4};
 `.trim();
 }
 
@@ -106,14 +127,15 @@ function classifyResource(
   if (!tags) {
     return null;
   }
-  if (tags.amenity === "hospital") {
+  if (tags.amenity === "hospital" || tags.healthcare === "hospital") {
     return "hospital";
   }
-  if (tags.amenity === "police") {
+  if (tags.amenity === "police" || tags.amenity === "police_station") {
     return "police";
   }
   if (
     tags.emergency === "ambulance_station" ||
+    tags.healthcare === "ambulance_station" ||
     (tags.amenity === "clinic" && tags.emergency === "yes")
   ) {
     return "ambulance";
@@ -121,11 +143,20 @@ function classifyResource(
   return null;
 }
 
-function logResourceWarning(message: string, detail?: Record<string, unknown>) {
+function logResource(level: "info" | "warn", message: string, detail?: Record<string, unknown>) {
   if (process.env.NODE_ENV === "test") {
     return;
   }
-  console.warn(`${LOG_PREFIX} ${message}`, detail ?? "");
+  const payload = detail ?? {};
+  if (level === "info") {
+    console.info(`${LOG_PREFIX} ${message}`, payload);
+  } else {
+    console.warn(`${LOG_PREFIX} ${message}`, payload);
+  }
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function fetchWithTimeout(
@@ -137,42 +168,63 @@ async function fetchWithTimeout(
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    return await fetch(url, { ...init, signal: controller.signal });
+    return await fetch(url, { ...init, signal: controller.signal, cache: "no-store" });
   } finally {
     clearTimeout(timeoutId);
   }
 }
 
-async function fetchOverpass(query: string): Promise<OverpassElement[]> {
+async function fetchOverpass(query: string): Promise<{
+  elements: OverpassElement[];
+  endpoint: string;
+  attempts: number;
+}> {
   let lastError: Error | null = null;
+  let totalAttempts = 0;
 
   for (const endpoint of OVERPASS_ENDPOINTS) {
-    try {
-      const response = await fetchWithTimeout(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: `data=${encodeURIComponent(query)}`,
-        next: { revalidate: 300 },
-      });
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS_PER_ENDPOINT; attempt += 1) {
+      totalAttempts += 1;
+      try {
+        const response = await fetchWithTimeout(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "User-Agent": OVERPASS_USER_AGENT,
+          },
+          body: `data=${encodeURIComponent(query)}`,
+        });
 
-      if (!response.ok) {
-        throw new Error(`Overpass HTTP ${response.status}`);
+        if (response.status === 429) {
+          throw new Error("Overpass rate limited (429)");
+        }
+        if (!response.ok) {
+          throw new Error(`Overpass HTTP ${response.status}`);
+        }
+
+        const json = (await response.json()) as { elements?: OverpassElement[] };
+        return {
+          elements: json.elements ?? [],
+          endpoint,
+          attempts: totalAttempts,
+        };
+      } catch (error) {
+        const normalized =
+          error instanceof Error
+            ? error.name === "AbortError"
+              ? new Error("Overpass request timed out")
+              : error
+            : new Error("Overpass failed");
+        lastError = normalized;
+        logResource("warn", "Overpass attempt failed", {
+          endpoint,
+          attempt,
+          message: normalized.message,
+        });
+        if (attempt < MAX_ATTEMPTS_PER_ENDPOINT) {
+          await delay(RETRY_DELAY_MS * attempt);
+        }
       }
-
-      const json = (await response.json()) as { elements?: OverpassElement[] };
-      return json.elements ?? [];
-    } catch (error) {
-      const normalized =
-        error instanceof Error
-          ? error.name === "AbortError"
-            ? new Error("Overpass request timed out")
-            : error
-          : new Error("Overpass failed");
-      lastError = normalized;
-      logResourceWarning("Overpass endpoint failed", {
-        endpoint,
-        message: normalized.message,
-      });
     }
   }
 
@@ -208,6 +260,8 @@ function mapElementsToResources(
     const name =
       el.tags?.name ??
       el.tags?.["name:en"] ??
+      el.tags?.["name:hi"] ??
+      el.tags?.["name:ta"] ??
       (type === "hospital"
         ? "Hospital"
         : type === "police"
@@ -257,17 +311,40 @@ export async function getNearbyEmergencyResources(
   }
 
   const safeRadius = Number.isFinite(radiusM) && radiusM > 0 ? radiusM : DEFAULT_RADIUS_M;
+  const started = Date.now();
 
   try {
     const query = buildOverpassQuery(latitude, longitude, safeRadius);
-    const elements = await fetchOverpass(query);
-    return mapElementsToResources(elements, latitude, longitude);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    logResourceWarning("Returning empty resource set after upstream failure", {
+    const { elements, endpoint, attempts } = await fetchOverpass(query);
+    const mapped = mapElementsToResources(elements, latitude, longitude);
+    const durationMs = Date.now() - started;
+
+    logResource("info", "Resources fetched", {
       latitude,
       longitude,
+      radiusM: safeRadius,
+      elementCount: elements.length,
+      hospitals: mapped.hospitals.length,
+      police: mapped.police.length,
+      ambulances: mapped.ambulances.length,
+      endpoint,
+      attempts,
+      durationMs,
+    });
+
+    return {
+      ...mapped,
+      meta: { durationMs, elementCount: elements.length, endpoint, attempts },
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    const durationMs = Date.now() - started;
+    logResource("warn", "Upstream failure — returning empty set", {
+      latitude,
+      longitude,
+      radiusM: safeRadius,
       message,
+      durationMs,
     });
     return {
       hospitals: [],
@@ -276,6 +353,7 @@ export async function getNearbyEmergencyResources(
       userLatitude: latitude,
       userLongitude: longitude,
       unavailable: true,
+      meta: { durationMs, elementCount: 0, attempts: OVERPASS_ENDPOINTS.length * MAX_ATTEMPTS_PER_ENDPOINT },
     };
   }
 }
@@ -292,8 +370,7 @@ export async function reverseGeocodeLabel(
     const response = await fetchWithTimeout(
       url,
       {
-        headers: { "User-Agent": "LifeGuardian/1.0 (emergency-app)" },
-        next: { revalidate: 600 },
+        headers: { "User-Agent": OVERPASS_USER_AGENT },
       },
       8_000,
     );

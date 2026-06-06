@@ -9,6 +9,7 @@ import {
   type SosConfirmationDto,
   type SosLocationInput,
 } from "@/types/sos";
+import { isValidIanaTimeZone } from "@/lib/datetime/format-datetime";
 import {
   buildSosEmergencyMessage,
   formatLocationLabel,
@@ -54,6 +55,7 @@ export async function createSosAlertWithDelivery(
         mapsUrl,
         sentAt,
         responseUrl: responseUrlByContactId.get(contact.id) ?? null,
+        clientTimeZone: input.clientTimeZone,
       }),
     responseUrlByContactId,
   );
@@ -91,6 +93,14 @@ export async function getSosDashboardStats(userId: string): Promise<SosDashboard
     totalSent,
     lastSosAt: latest?.createdAt ?? null,
   };
+}
+
+export function parseClientTimeZoneFromForm(formData: FormData): string | null {
+  const raw = toNullable(formData.get("clientTimeZone"));
+  if (!raw || !isValidIanaTimeZone(raw)) {
+    return null;
+  }
+  return raw;
 }
 
 export function parseSosLocationFromForm(formData: FormData): SosLocationInput {

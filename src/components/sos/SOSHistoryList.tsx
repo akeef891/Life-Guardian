@@ -1,3 +1,6 @@
+"use client";
+
+import { LocalDateTime } from "@/components/datetime/LocalDateTime";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { IncidentReportDownload } from "@/components/dashboard/IncidentReportDownload";
 import { formatAccuracyLabel } from "@/lib/geolocation/get-accurate-position";
@@ -13,36 +16,16 @@ type SOSHistoryItem = {
   longitude: number | null;
   accuracy: number | null;
   locationAccuracy: number | null;
-  locationCapturedAt: Date | null;
+  locationCapturedAt: Date | string | null;
   mapsUrl: string | null;
   deliveredCount: number;
   deliveryStatus: string;
-  createdAt: Date;
+  createdAt: Date | string;
 };
 
 type SOSHistoryListProps = {
   alerts: SOSHistoryItem[];
 };
-
-function formatDate(value: Date) {
-  return value.toLocaleDateString();
-}
-
-function formatTime(value: Date) {
-  return value.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-}
-
-function formatCapturedAt(value: Date | null) {
-  if (!value) {
-    return null;
-  }
-  return value.toLocaleString([], {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 export function SOSHistoryList({ alerts }: SOSHistoryListProps) {
   return (
@@ -65,7 +48,6 @@ export function SOSHistoryList({ alerts }: SOSHistoryListProps) {
             const hasLocation = alert.latitude !== null && alert.longitude !== null;
             const mapsUrl = alert.mapsUrl;
             const accuracy = alert.locationAccuracy ?? alert.accuracy;
-            const capturedLabel = formatCapturedAt(alert.locationCapturedAt);
             const isEscalated = alert.escalationStatus === SOS_ESCALATION_STATUS.ESCALATED;
 
             return (
@@ -86,9 +68,9 @@ export function SOSHistoryList({ alerts }: SOSHistoryListProps) {
                     {alert.deliveryStatus}
                   </span>
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
-                    <span>{formatDate(alert.createdAt)}</span>
+                    <LocalDateTime value={alert.createdAt} mode="date" />
                     <span aria-hidden>-</span>
-                    <span>{formatTime(alert.createdAt)}</span>
+                    <LocalDateTime value={alert.createdAt} mode="time" />
                   </div>
                 </div>
 
@@ -111,8 +93,11 @@ export function SOSHistoryList({ alerts }: SOSHistoryListProps) {
                     <p className="text-xs font-medium text-foreground">
                       GPS: {formatAccuracyLabel(accuracy)}
                     </p>
-                    {capturedLabel ? (
-                      <p className="text-xs text-muted">Location captured: {capturedLabel}</p>
+                    {alert.locationCapturedAt ? (
+                      <p className="text-xs text-muted">
+                        Location captured:{" "}
+                        <LocalDateTime value={alert.locationCapturedAt} mode="datetime" />
+                      </p>
                     ) : null}
                     {mapsUrl ? (
                       <a

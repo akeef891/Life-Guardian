@@ -3,17 +3,21 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
+import { LocalDateTime } from "@/components/datetime/LocalDateTime";
 import { useLocale } from "@/components/i18n/LocaleProvider";
 import { Skeleton } from "@/components/ui/Skeleton";
+import {
+  fetchNearbyResourcesClient,
+  requestUserCoordinates,
+} from "@/lib/resources/client-fetch-nearby";
 import { ROUTES } from "@/lib/constants/routes";
-import { parseNearbyResourcesApiResponse } from "@/lib/services/emergency-resources-api";
 import type { EmergencyResource, NearbyResourcesResult } from "@/lib/services/emergency-resources.service";
 import type { SafetyCheckInStatus } from "@/types/safety-check-in";
 import type { CommunityAlertDto } from "@/types/community-alert";
 
 type Props = {
   latestCheckInStatus: SafetyCheckInStatus | null;
-  latestCheckInAt: Date | null;
+  latestCheckInAt: Date | string | null;
   latestAlert: CommunityAlertDto | null;
 };
 
@@ -73,45 +77,46 @@ export function DashboardResourceCenter({
   const [data, setData] = useState<NearbyResourcesResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [unavailable, setUnavailable] = useState(false);
+  const [locationDenied, setLocationDenied] = useState(false);
 
-  const loadNearby = useCallback(() => {
+  const loadNearby = useCallback(async () => {
     if (!navigator.geolocation) {
       return;
     }
 
     setLoading(true);
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        try {
-          const response = await fetch(
-            `/api/resources/nearby?lat=${position.coords.latitude}&lng=${position.coords.longitude}`,
-          );
-          const json: unknown = await response.json();
-          const parsed = parseNearbyResourcesApiResponse(json);
-          if (parsed) {
-            setData(parsed);
-            setUnavailable(Boolean(parsed.unavailable));
-          }
-        } catch {
-          setUnavailable(true);
-        } finally {
-          setLoading(false);
-        }
-      },
-      () => {
-        setLoading(false);
-      },
-      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
-    );
+    setLocationDenied(false);
+
+    try {
+      const position = await requestUserCoordinates({
+        enableHighAccuracy: false,
+        timeout: 12000,
+        maximumAge: 300000,
+      });
+      const result = await fetchNearbyResourcesClient(
+        position.coords.latitude,
+        position.coords.longitude,
+      );
+      setData(result.data);
+      setUnavailable(result.unavailable);
+    } catch {
+      setLocationDenied(true);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
-    loadNearby();
+    void loadNearby();
   }, [loadNearby]);
 
   const hospital: EmergencyResource | null = data?.hospitals[0] ?? null;
   const police: EmergencyResource | null = data?.police[0] ?? null;
-  const emptyHint = unavailable ? t.resources.unavailable : t.resources.locationHint;
+  const emptyHint = unavailable
+    ? t.resources.unavailable
+    : locationDenied
+      ? t.resources.locationError
+      : t.resources.locationHint;
 
   return (
     <DashboardCard>
@@ -154,12 +159,7 @@ export function DashboardResourceCenter({
           </p>
           {latestCheckInAt ? (
             <p className="mt-1 text-xs text-muted">
-              {latestCheckInAt.toLocaleString([], {
-                month: "short",
-                day: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
+              <LocalDateTime value={latestCheckInAt} mode="datetime" />
             </p>
           ) : null}
           <Link

@@ -4,6 +4,7 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { triggerSOSAction } from "@/app/(app)/sos/actions";
 import { SOSConfirmationPanel } from "@/components/sos/SOSConfirmationPanel";
 import { useActionStateToast } from "@/components/ui/toast/useActionStateToast";
+import { getBrowserTimeZone } from "@/lib/datetime/format-datetime";
 import { getAccuratePosition } from "@/lib/geolocation/get-accurate-position";
 import { TRIGGER_SOS_INITIAL_STATE, type TriggerSosState } from "@/types/sos";
 
@@ -124,6 +125,7 @@ export function SOSTriggerPanel() {
           <input ref={longitudeRef} type="hidden" name="longitude" />
           <input ref={accuracyRef} type="hidden" name="accuracy" />
           <input ref={capturedAtRef} type="hidden" name="locationCapturedAt" />
+          <input type="hidden" name="clientTimeZone" value={getBrowserTimeZone()} />
 
           {state.error ? (
             <p className="sr-only" role="alert">

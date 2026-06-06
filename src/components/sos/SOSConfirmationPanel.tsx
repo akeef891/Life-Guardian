@@ -1,21 +1,15 @@
+"use client";
+
+import { formatSosDateTime, getBrowserTimeZone } from "@/lib/datetime/format-datetime";
 import type { SosConfirmationDto } from "@/types/sos";
 
 type SOSConfirmationPanelProps = {
   confirmation: SosConfirmationDto;
 };
 
-function formatSentTime(iso: string): string {
-  const date = new Date(iso);
-  return date.toLocaleString([], {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
 export function SOSConfirmationPanel({ confirmation }: SOSConfirmationPanelProps) {
+  const sentLabel = formatSosDateTime(confirmation.sentAt, getBrowserTimeZone());
+
   return (
     <section
       className="min-w-0 overflow-hidden rounded-2xl border-2 border-emerald-300 bg-emerald-50 p-4 sm:p-6"
@@ -50,9 +44,7 @@ export function SOSConfirmationPanel({ confirmation }: SOSConfirmationPanelProps
           <dt className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
             Time sent
           </dt>
-          <dd className="mt-1 text-sm font-semibold text-emerald-900">
-            {formatSentTime(confirmation.sentAt)}
-          </dd>
+          <dd className="mt-1 text-sm font-semibold text-emerald-900">{sentLabel}</dd>
         </div>
         <div className="rounded-xl border border-emerald-200 bg-white/80 p-3 sm:col-span-2">
           <dt className="text-xs font-semibold uppercase tracking-wide text-emerald-700">

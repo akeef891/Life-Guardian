@@ -23,16 +23,7 @@ export default async function CheckInPage() {
       <PageHeader title={t.checkIn.title} description={t.checkIn.description} />
       <SafetyCheckInPanel
         latestStatus={(latest?.status as SafetyCheckInStatus) ?? null}
-        latestAt={
-          latest
-            ? latest.createdAt.toLocaleString([], {
-                month: "short",
-                day: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              })
-            : null
-        }
+        latestAt={latest ? latest.createdAt.toISOString() : null}
       />
     </div>
   );

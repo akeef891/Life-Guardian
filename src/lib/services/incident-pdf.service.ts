@@ -1,19 +1,12 @@
 import { jsPDF } from "jspdf";
+import { formatSosDateTime } from "@/lib/datetime/format-datetime";
 import type { IncidentReportData } from "@/lib/services/incident-report.service";
 import { formatResponseSummary } from "@/lib/services/incident-report.service";
 
-function formatTimestamp(value: Date): string {
-  return value.toLocaleString([], {
-    weekday: "short",
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-export function generateIncidentReportPdf(report: IncidentReportData): Uint8Array {
+export function generateIncidentReportPdf(
+  report: IncidentReportData,
+  timeZone?: string | null,
+): Uint8Array {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const margin = 48;
   let y = margin;
@@ -35,7 +28,7 @@ export function generateIncidentReportPdf(report: IncidentReportData): Uint8Arra
   addLine("Life Guardian — Emergency Incident Report", 16, true);
   y += 4;
   addLine(`Incident ID: ${report.alertId}`);
-  addLine(`Timestamp: ${formatTimestamp(report.timestamp)}`);
+  addLine(`Timestamp: ${formatSosDateTime(report.timestamp, timeZone)} (${timeZone ?? "UTC"})`);
   addLine(`Status: ${report.incidentStatus}`);
   addLine(`Escalation: ${report.escalationStatus}`);
   y += 8;
@@ -58,7 +51,7 @@ export function generateIncidentReportPdf(report: IncidentReportData): Uint8Arra
   } else {
     for (const response of report.responses) {
       const responded = response.respondedAt
-        ? formatTimestamp(response.respondedAt)
+        ? formatSosDateTime(response.respondedAt, timeZone)
         : "Not yet";
       addLine(`• ${response.contactName}: ${response.status} (${responded})`);
     }

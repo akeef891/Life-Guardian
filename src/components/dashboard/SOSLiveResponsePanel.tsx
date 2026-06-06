@@ -1,7 +1,7 @@
+import { LocalRelativeTime } from "@/components/datetime/LocalRelativeTime";
 import type { LiveSosResponseState } from "@/lib/services/sos-response.service";
 import { CONTACT_RESPONSE_STATUS, SOS_ESCALATION_STATUS } from "@/types/emergency-response";
 import { DashboardCard } from "./DashboardCard";
-import { formatRelativeTime } from "@/lib/dashboard/format-relative-time";
 
 type Props = {
   liveState: LiveSosResponseState | null;
@@ -43,7 +43,7 @@ export function SOSLiveResponsePanel({ liveState }: Props) {
         <div className="min-w-0">
           <h2 className="text-lg font-semibold text-foreground">Live SOS Response</h2>
           <p className="mt-1 text-sm text-muted">
-            Started {formatRelativeTime(liveState.createdAt)} — {answered} of{" "}
+            Started <LocalRelativeTime value={liveState.createdAt} /> — {answered} of{" "}
             {liveState.responses.length} responded
           </p>
         </div>
@@ -71,7 +71,7 @@ export function SOSLiveResponsePanel({ liveState }: Props) {
                 <p className="text-sm font-semibold text-foreground">{response.contactName}</p>
                 {response.respondedAt ? (
                   <p className="text-xs text-muted">
-                    Updated {formatRelativeTime(response.respondedAt)}
+                    Updated <LocalRelativeTime value={response.respondedAt} />
                   </p>
                 ) : null}
               </div>

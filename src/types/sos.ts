@@ -25,6 +25,7 @@ export type CreateSosAlertInput = {
   location: SosLocationInput;
   contacts: EmergencyContactRecord[];
   senderName: string;
+  clientTimeZone?: string | null;
 };
 
 export type ContactDeliveryPayload = {

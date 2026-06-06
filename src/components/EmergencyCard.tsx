@@ -94,6 +94,7 @@ export function EmergencyCard({ data, className }: EmergencyCardProps) {
                     {contact.relationship && (
                       <p className="text-sm text-muted">{contact.relationship}</p>
                     )}
+                    
                     {contact.isPrimary ? (
                       <span className="rounded-full bg-brand/10 px-2 py-0.5 text-xs font-semibold text-brand">
                         Primary

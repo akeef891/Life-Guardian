@@ -20,14 +20,6 @@ export default async function RespondPage({ params }: RespondPageProps) {
     record.sosAlert.user.firstName ??
     record.sosAlert.user.email;
 
-  const alertTime = record.sosAlert.createdAt.toLocaleString([], {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
   return (
     <main className="mx-auto flex w-full min-w-0 max-w-lg flex-1 overflow-x-hidden px-3 py-8 sm:px-6 sm:py-12">
       <ContactResponsePanel
@@ -35,7 +27,7 @@ export default async function RespondPage({ params }: RespondPageProps) {
         contactName={record.contactName}
         victimName={victimName}
         currentStatus={record.status as ContactResponseStatus}
-        alertTime={alertTime}
+        alertTime={record.sosAlert.createdAt.toISOString()}
       />
     </main>
   );

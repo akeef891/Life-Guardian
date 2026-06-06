@@ -7,6 +7,7 @@ import { logServerError } from "@/lib/logging/server-error";
 import {
   createSosAlertWithDelivery,
   isValidSosCoordinates,
+  parseClientTimeZoneFromForm,
   parseSosLocationFromForm,
   resolveSenderName,
 } from "@/lib/services/sos-alert.service";
@@ -77,6 +78,7 @@ export async function triggerSOSAction(
       location,
       contacts,
       senderName,
+      clientTimeZone: parseClientTimeZoneFromForm(formData),
     });
 
     revalidatePath(ROUTES.sos);

@@ -7,7 +7,11 @@ import { EmergencyMap } from "@/components/resources/EmergencyMap";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SkeletonCard } from "@/components/ui/Skeleton";
 import { useLocale } from "@/components/i18n/LocaleProvider";
-import { parseNearbyResourcesApiResponse } from "@/lib/services/emergency-resources-api";
+import {
+  fetchNearbyResourcesClient,
+  requestUserCoordinates,
+  type NearbyResourcesDiagnostics,
+} from "@/lib/resources/client-fetch-nearby";
 import type { NearbyResourcesResult } from "@/lib/services/emergency-resources.service";
 import { ACTIVITY_EVENT_KIND } from "@/types/activity-log";
 
@@ -16,51 +20,51 @@ export function ResourcesExplorer() {
   const [data, setData] = useState<NearbyResourcesResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [unavailable, setUnavailable] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [loggedOpen, setLoggedOpen] = useState(false);
+  const [diagnostics, setDiagnostics] = useState<NearbyResourcesDiagnostics | null>(null);
+  const [autoLoaded, setAutoLoaded] = useState(false);
 
-  const fetchResources = useCallback(async (lat: number, lng: number) => {
-    setLoading(true);
-    setError(null);
-    setUnavailable(false);
+  const fetchResources = useCallback(
+    async (lat: number, lng: number) => {
+      setLoading(true);
+      setError(null);
+      setUnavailable(false);
 
-    try {
-      const response = await fetch(`/api/resources/nearby?lat=${lat}&lng=${lng}`);
-      const json: unknown = await response.json();
-      const parsed = parseNearbyResourcesApiResponse(json);
+      const result = await fetchNearbyResourcesClient(lat, lng);
+      setDiagnostics(result.diagnostics);
 
-      if (!parsed) {
+      if (result.error && !result.data) {
         setError(t.resources.loadError);
         setData(null);
-        return;
+        setUnavailable(result.unavailable);
+      } else if (result.data) {
+        setData(result.data);
+        setUnavailable(result.unavailable);
       }
 
-      setData(parsed);
-      setUnavailable(Boolean(parsed.unavailable));
-    } catch {
-      setError(t.resources.loadError);
-      setData(null);
-    } finally {
       setLoading(false);
-    }
-  }, [t.resources.loadError]);
+    },
+    [t.resources.loadError],
+  );
 
-  const useMyLocation = useCallback(() => {
+  const useMyLocation = useCallback(async () => {
     if (!navigator.geolocation) {
       setError(t.resources.locationError);
+      setLoading(false);
       return;
     }
+
     setLoading(true);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        void fetchResources(position.coords.latitude, position.coords.longitude);
-      },
-      () => {
-        setError(t.resources.locationError);
-        setLoading(false);
-      },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
-    );
+    setError(null);
+
+    try {
+      const position = await requestUserCoordinates();
+      await fetchResources(position.coords.latitude, position.coords.longitude);
+    } catch {
+      setError(t.resources.locationError);
+      setLoading(false);
+    }
   }, [fetchResources, t.resources.locationError]);
 
   useEffect(() => {
@@ -74,16 +78,25 @@ export function ResourcesExplorer() {
     }
   }, [loggedOpen]);
 
+  useEffect(() => {
+    if (!autoLoaded) {
+      setAutoLoaded(true);
+      void useMyLocation();
+    }
+  }, [autoLoaded, useMyLocation]);
+
   const hasAny =
     data &&
     (data.hospitals.length > 0 || data.police.length > 0 || data.ambulances.length > 0);
+
+  const showNoResults = !loading && data && !unavailable && !hasAny && !error;
 
   return (
     <div className="min-w-0 space-y-6 overflow-x-hidden">
       <div className="flex flex-wrap gap-3">
         <button
           type="button"
-          onClick={useMyLocation}
+          onClick={() => void useMyLocation()}
           disabled={loading}
           className="inline-flex min-h-11 min-w-[11rem] items-center justify-center rounded-lg bg-brand px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-brand-dark focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/30 disabled:opacity-60"
         >
@@ -109,6 +122,14 @@ export function ResourcesExplorer() {
         </p>
       ) : null}
 
+      {process.env.NODE_ENV !== "production" && diagnostics ? (
+        <p className="rounded-lg border border-border bg-surface px-3 py-2 font-mono text-xs text-muted">
+          diag: lat={diagnostics.lat} lng={diagnostics.lng} http={diagnostics.httpStatus} h=
+          {diagnostics.hospitalCount} p={diagnostics.policeCount} a={diagnostics.ambulanceCount}{" "}
+          unavailable={String(diagnostics.unavailable)} {diagnostics.durationMs}ms
+        </p>
+      ) : null}
+
       {loading ? (
         <div className="space-y-3" aria-busy="true" aria-label={t.common.loading}>
           <SkeletonCard />
@@ -118,7 +139,7 @@ export function ResourcesExplorer() {
         <EmergencyMap data={data} />
       )}
 
-      {!loading && data && !hasAny ? (
+      {showNoResults ? (
         <EmptyState title={t.resources.noResults} description={t.resources.description} />
       ) : null}
 

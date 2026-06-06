@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { LocalDateTime } from "@/components/datetime/LocalDateTime";
 import { logActivityEvent } from "@/app/(app)/activity/actions";
 import type { CommunityAlertDto } from "@/types/community-alert";
 import { ACTIVITY_EVENT_KIND } from "@/types/activity-log";
@@ -56,9 +57,7 @@ export function CommunityAlertsPanel({ alerts }: Props) {
             >
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs font-bold uppercase">{alert.severity}</span>
-                <time className="text-xs opacity-80" dateTime={alert.createdAt.toISOString()}>
-                  {alert.createdAt.toLocaleDateString()}
-                </time>
+                <LocalDateTime value={alert.createdAt} mode="date" className="text-xs opacity-80" />
               </div>
               <p className="mt-2 text-sm font-semibold">{alert.title}</p>
               <p className="mt-1 text-sm opacity-90">{alert.description}</p>

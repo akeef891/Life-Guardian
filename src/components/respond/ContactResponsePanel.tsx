@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { LocalDateTime } from "@/components/datetime/LocalDateTime";
 import { submitContactResponse } from "@/app/respond/[token]/actions";
 import {
   CONTACT_RESPONSE_STATUS,
@@ -73,7 +74,9 @@ export function ContactResponsePanel({
         Hi {contactName}
       </h1>
       <p className="mt-2 text-sm text-muted">
-        {victimName} triggered an SOS alert on {alertTime}. Please choose your response.
+        {victimName} triggered an SOS alert on{" "}
+        <LocalDateTime value={alertTime} mode="datetime" className="font-medium text-foreground" />
+        . Please choose your response.
       </p>
 
       {alreadyAnswered ? (

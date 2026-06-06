@@ -1,5 +1,7 @@
 "use client";
 
+import { getBrowserTimeZone } from "@/lib/datetime/format-datetime";
+
 type IncidentReportDownloadProps = {
   alertId: string;
   label?: string;
@@ -9,7 +11,8 @@ export function IncidentReportDownload({
   alertId,
   label = "Download incident PDF",
 }: IncidentReportDownloadProps) {
-  const href = `/api/incidents/${alertId}/pdf`;
+  const timeZone = encodeURIComponent(getBrowserTimeZone());
+  const href = `/api/incidents/${alertId}/pdf?tz=${timeZone}`;
 
   return (
     <a
