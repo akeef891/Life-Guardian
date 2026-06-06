@@ -1,24 +1,27 @@
+import { formatDistanceFromMeters } from "@/lib/geolocation/format-distance";
 import type { EmergencyResource } from "@/lib/services/emergency-resources.service";
 
 type ResourceCardProps = {
   resource: EmergencyResource;
   openMapsLabel?: string;
-  distanceLabel?: string;
 };
 
 export function ResourceCard({
   resource,
   openMapsLabel = "Open in Google Maps",
-  distanceLabel = "km away",
 }: ResourceCardProps) {
+  const distanceM =
+    resource.distanceM ??
+    (Number.isFinite(resource.distanceKm) ? Math.round(resource.distanceKm * 1000) : 0);
+
   return (
     <article className="min-w-0 rounded-xl border border-border bg-background p-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <h3 className="text-sm font-semibold text-foreground">{resource.name}</h3>
-          <p className="mt-1 text-xs text-muted">{resource.address}</p>
+          <p className="mt-1 break-words text-xs text-muted">{resource.address}</p>
           <p className="mt-2 text-xs font-medium text-brand">
-            {resource.distanceKm} {distanceLabel}
+            {formatDistanceFromMeters(distanceM)} away
           </p>
         </div>
         <a

@@ -9,6 +9,7 @@ export type NearbyResourcesApiResponse = {
   userLatitude: number;
   userLongitude: number;
   unavailable?: boolean;
+  meta?: NearbyResourcesResult["meta"];
 };
 
 export function flattenResources(result: NearbyResourcesResult): EmergencyResource[] {
@@ -26,6 +27,7 @@ export function toNearbyResourcesApiResponse(
     ambulances: result.ambulances,
     userLatitude: result.userLatitude,
     userLongitude: result.userLongitude,
+    meta: result.meta,
     ...(result.unavailable ? { unavailable: true } : {}),
   };
 }
@@ -41,6 +43,12 @@ export function createEmptyNearbyResult(
     userLatitude: latitude,
     userLongitude: longitude,
     unavailable: true,
+    meta: {
+      durationMs: 0,
+      elementCount: 0,
+      attempts: 0,
+      searchRadiusM: 2000,
+    },
   };
 }
 
@@ -74,5 +82,6 @@ export function parseNearbyResourcesApiResponse(
     userLatitude,
     userLongitude,
     unavailable: body.unavailable === true,
+    meta: body.meta as NearbyResourcesResult["meta"] | undefined,
   };
 }

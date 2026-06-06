@@ -105,7 +105,7 @@ export function SOSTriggerPanel() {
         Trigger SOS
       </h2>
       <p className="mt-1 text-sm text-muted">
-        High-accuracy GPS (15s timeout). Retries once if accuracy is worse than 100m. Prepares
+        High-accuracy GPS (up to 30s, 3 attempts). Retries when accuracy is over 50–100m. Prepares
         WhatsApp and SMS alerts for all emergency contacts.
       </p>
 
@@ -134,8 +134,7 @@ export function SOSTriggerPanel() {
           ) : null}
           {isLocating ? (
             <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-            Getting your location with high accuracy… Stay still. Retries once if accuracy is
-            over 100m (up to 15 seconds per attempt).
+            Acquiring high-accuracy GPS (up to 30 seconds, up to 3 attempts). Stay still for the best fix.
             </p>
           ) : null}
           {geoStatus === "permission-denied" ? (

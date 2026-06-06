@@ -1,3 +1,5 @@
+import { formatCoordForMaps } from "@/lib/geolocation/get-accurate-position";
+
 export type EmergencyResourceType = "hospital" | "police" | "ambulance";
 
 export type EmergencyResource = {
@@ -7,6 +9,9 @@ export type EmergencyResource = {
   address: string;
   latitude: number;
   longitude: number;
+  /** Distance in meters (Haversine). */
+  distanceM: number;
+  /** Distance in km (legacy/display helper). */
   distanceKm: number;
   mapsUrl: string;
 };
@@ -26,14 +31,28 @@ export type NearbyResourcesMeta = {
   elementCount: number;
   endpoint?: string;
   attempts: number;
+  searchRadiusM: number;
 };
 
-const EARTH_RADIUS_KM = 6371;
-export const DEFAULT_RADIUS_M = 12_000;
+/** Progressive search: start tight, expand only when needed. */
+export const RESOURCE_SEARCH_RADII_M = [2_000, 5_000, 10_000] as const;
+const MIN_TOTAL_RESULTS = 3;
+
+function shouldExpandSearchRadius(
+  mapped: Pick<NearbyResourcesResult, "hospitals" | "police" | "ambulances">,
+): boolean {
+  const total = countTotalResources(mapped);
+  if (total < MIN_TOTAL_RESULTS) {
+    return true;
+  }
+  // Expand if any critical category is empty (nearest-first quality)
+  return mapped.hospitals.length === 0 || mapped.police.length === 0;
+}
 const MAX_PER_TYPE = 12;
 const FETCH_TIMEOUT_MS = 18_000;
 const RETRY_DELAY_MS = 600;
 const MAX_ATTEMPTS_PER_ENDPOINT = 2;
+const SERVER_CACHE_TTL_MS = 2 * 60 * 1000;
 const LOG_PREFIX = "[emergency-resources]";
 
 const OVERPASS_ENDPOINTS = [
@@ -41,9 +60,6 @@ const OVERPASS_ENDPOINTS = [
   "https://overpass.kumi.systems/api/interpreter",
   "https://overpass.openstreetmap.fr/api/interpreter",
 ];
-
-const NOMINATIM_REVERSE =
-  "https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lon}";
 
 const OVERPASS_USER_AGENT = "LifeGuardian/1.0 (emergency-app; contact@lifeguardian.app)";
 
@@ -56,7 +72,16 @@ type OverpassElement = {
   tags?: Record<string, string>;
 };
 
-function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+type CacheEntry = {
+  expiresAt: number;
+  result: NearbyResourcesResult;
+};
+
+const serverResourceCache = new Map<string, CacheEntry>();
+
+const EARTH_RADIUS_M = 6_371_000;
+
+function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
   const a =
@@ -64,11 +89,11 @@ function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): nu
     Math.cos((lat1 * Math.PI) / 180) *
       Math.cos((lat2 * Math.PI) / 180) *
       Math.sin(dLon / 2) ** 2;
-  return EARTH_RADIUS_KM * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return EARTH_RADIUS_M * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 function buildMapsUrl(lat: number, lon: number): string {
-  return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}`;
+  return `https://www.google.com/maps/search/?api=1&query=${formatCoordForMaps(lat)},${formatCoordForMaps(lon)}`;
 }
 
 function elementCoords(el: OverpassElement): { lat: number; lon: number } | null {
@@ -159,6 +184,35 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function cacheKey(lat: number, lon: number): string {
+  return `${lat.toFixed(5)},${lon.toFixed(5)}`;
+}
+
+function getServerCached(lat: number, lon: number): NearbyResourcesResult | null {
+  const entry = serverResourceCache.get(cacheKey(lat, lon));
+  if (!entry || entry.expiresAt <= Date.now()) {
+    if (entry) {
+      serverResourceCache.delete(cacheKey(lat, lon));
+    }
+    return null;
+  }
+  return entry.result;
+}
+
+function setServerCache(lat: number, lon: number, result: NearbyResourcesResult) {
+  if (result.unavailable) {
+    return;
+  }
+  serverResourceCache.set(cacheKey(lat, lon), {
+    expiresAt: Date.now() + SERVER_CACHE_TTL_MS,
+    result,
+  });
+}
+
+function countTotalResources(result: Pick<NearbyResourcesResult, "hospitals" | "police" | "ambulances">) {
+  return result.hospitals.length + result.police.length + result.ambulances.length;
+}
+
 async function fetchWithTimeout(
   url: string,
   init: RequestInit,
@@ -235,7 +289,7 @@ function mapElementsToResources(
   elements: OverpassElement[],
   userLat: number,
   userLon: number,
-): NearbyResourcesResult {
+): Pick<NearbyResourcesResult, "hospitals" | "police" | "ambulances"> {
   const buckets: Record<EmergencyResourceType, EmergencyResource[]> = {
     hospital: [],
     police: [],
@@ -268,7 +322,7 @@ function mapElementsToResources(
           ? "Police Station"
           : "Ambulance Service");
 
-    const distanceKm = haversineKm(userLat, userLon, coords.lat, coords.lon);
+    const distanceM = Math.round(haversineMeters(userLat, userLon, coords.lat, coords.lon));
 
     buckets[type].push({
       id: key,
@@ -277,27 +331,24 @@ function mapElementsToResources(
       address: formatAddress(el.tags),
       latitude: coords.lat,
       longitude: coords.lon,
-      distanceKm: Math.round(distanceKm * 10) / 10,
+      distanceM,
+      distanceKm: Math.round((distanceM / 1000) * 10) / 10,
       mapsUrl: buildMapsUrl(coords.lat, coords.lon),
     });
   }
 
-  const sortByDistance = (a: EmergencyResource, b: EmergencyResource) =>
-    a.distanceKm - b.distanceKm;
+  const sortByDistance = (a: EmergencyResource, b: EmergencyResource) => a.distanceM - b.distanceM;
 
   return {
     hospitals: buckets.hospital.sort(sortByDistance).slice(0, MAX_PER_TYPE),
     police: buckets.police.sort(sortByDistance).slice(0, MAX_PER_TYPE),
     ambulances: buckets.ambulance.sort(sortByDistance).slice(0, MAX_PER_TYPE),
-    userLatitude: userLat,
-    userLongitude: userLon,
   };
 }
 
 export async function getNearbyEmergencyResources(
   latitude: number,
   longitude: number,
-  radiusM = DEFAULT_RADIUS_M,
 ): Promise<NearbyResourcesResult> {
   if (
     !Number.isFinite(latitude) ||
@@ -310,39 +361,70 @@ export async function getNearbyEmergencyResources(
     throw new Error("Invalid coordinates");
   }
 
-  const safeRadius = Number.isFinite(radiusM) && radiusM > 0 ? radiusM : DEFAULT_RADIUS_M;
+  const cached = getServerCached(latitude, longitude);
+  if (cached) {
+    logResource("info", "Server cache hit", { latitude, longitude });
+    return cached;
+  }
+
   const started = Date.now();
+  let lastMapped: Pick<NearbyResourcesResult, "hospitals" | "police" | "ambulances"> = {
+    hospitals: [],
+    police: [],
+    ambulances: [],
+  };
+  let lastMeta: Partial<NearbyResourcesMeta> = {};
 
   try {
-    const query = buildOverpassQuery(latitude, longitude, safeRadius);
-    const { elements, endpoint, attempts } = await fetchOverpass(query);
-    const mapped = mapElementsToResources(elements, latitude, longitude);
+    for (const radiusM of RESOURCE_SEARCH_RADII_M) {
+      const query = buildOverpassQuery(latitude, longitude, radiusM);
+      const { elements, endpoint, attempts } = await fetchOverpass(query);
+      lastMapped = mapElementsToResources(elements, latitude, longitude);
+      lastMeta = {
+        elementCount: elements.length,
+        endpoint,
+        attempts,
+        searchRadiusM: radiusM,
+      };
+
+      const total = countTotalResources(lastMapped);
+      logResource("info", "Radius search completed", {
+        latitude,
+        longitude,
+        radiusM,
+        total,
+        hospitals: lastMapped.hospitals.length,
+        police: lastMapped.police.length,
+        ambulances: lastMapped.ambulances.length,
+      });
+
+      if (!shouldExpandSearchRadius(lastMapped) || radiusM === RESOURCE_SEARCH_RADII_M.at(-1)) {
+        break;
+      }
+    }
+
     const durationMs = Date.now() - started;
-
-    logResource("info", "Resources fetched", {
-      latitude,
-      longitude,
-      radiusM: safeRadius,
-      elementCount: elements.length,
-      hospitals: mapped.hospitals.length,
-      police: mapped.police.length,
-      ambulances: mapped.ambulances.length,
-      endpoint,
-      attempts,
-      durationMs,
-    });
-
-    return {
-      ...mapped,
-      meta: { durationMs, elementCount: elements.length, endpoint, attempts },
+    const result: NearbyResourcesResult = {
+      ...lastMapped,
+      userLatitude: latitude,
+      userLongitude: longitude,
+      meta: {
+        durationMs,
+        elementCount: lastMeta.elementCount ?? 0,
+        endpoint: lastMeta.endpoint,
+        attempts: lastMeta.attempts ?? 0,
+        searchRadiusM: lastMeta.searchRadiusM ?? RESOURCE_SEARCH_RADII_M[0],
+      },
     };
+
+    setServerCache(latitude, longitude, result);
+    return result;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     const durationMs = Date.now() - started;
     logResource("warn", "Upstream failure — returning empty set", {
       latitude,
       longitude,
-      radiusM: safeRadius,
       message,
       durationMs,
     });
@@ -353,35 +435,25 @@ export async function getNearbyEmergencyResources(
       userLatitude: latitude,
       userLongitude: longitude,
       unavailable: true,
-      meta: { durationMs, elementCount: 0, attempts: OVERPASS_ENDPOINTS.length * MAX_ATTEMPTS_PER_ENDPOINT },
+      meta: {
+        durationMs,
+        elementCount: 0,
+        attempts: OVERPASS_ENDPOINTS.length * MAX_ATTEMPTS_PER_ENDPOINT,
+        searchRadiusM: RESOURCE_SEARCH_RADII_M[0],
+      },
     };
   }
 }
+
+export { reverseGeocodePlace, formatCoordinatesLabel } from "@/lib/geolocation/reverse-geocode";
 
 export async function reverseGeocodeLabel(
   latitude: number,
   longitude: number,
 ): Promise<string | null> {
-  try {
-    const url = NOMINATIM_REVERSE.replace("{lat}", String(latitude)).replace(
-      "{lon}",
-      String(longitude),
-    );
-    const response = await fetchWithTimeout(
-      url,
-      {
-        headers: { "User-Agent": OVERPASS_USER_AGENT },
-      },
-      8_000,
-    );
-    if (!response.ok) {
-      return null;
-    }
-    const data = (await response.json()) as { display_name?: string };
-    return data.display_name ?? null;
-  } catch {
-    return null;
-  }
+  const { reverseGeocodePlace } = await import("@/lib/geolocation/reverse-geocode");
+  const place = await reverseGeocodePlace(latitude, longitude);
+  return place.displayName;
 }
 
 export function getNearestByType(

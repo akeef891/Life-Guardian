@@ -1,10 +1,10 @@
 "use client";
 
 import { LocalDateTime } from "@/components/datetime/LocalDateTime";
+import { LocationPlaceDetails } from "@/components/geolocation/LocationPlaceDetails";
+import { LocationQualityBadge } from "@/components/geolocation/LocationQualityBadge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { IncidentReportDownload } from "@/components/dashboard/IncidentReportDownload";
-import { formatAccuracyLabel } from "@/lib/geolocation/get-accurate-position";
-import { formatCoordDisplay } from "@/lib/geolocation/format-coords";
 import { SOS_ESCALATION_STATUS } from "@/types/emergency-response";
 
 type SOSHistoryItem = {
@@ -80,19 +80,12 @@ export function SOSHistoryList({ alerts }: SOSHistoryListProps) {
 
                 {hasLocation ? (
                   <div className="mt-3 space-y-2">
-                    <div className="grid gap-1 text-sm text-muted sm:grid-cols-2">
-                      <p className="min-w-0 break-all">
-                        <span className="font-medium text-foreground">Lat:</span>{" "}
-                        {formatCoordDisplay(alert.latitude)}
-                      </p>
-                      <p className="min-w-0 break-all">
-                        <span className="font-medium text-foreground">Lng:</span>{" "}
-                        {formatCoordDisplay(alert.longitude)}
-                      </p>
-                    </div>
-                    <p className="text-xs font-medium text-foreground">
-                      GPS: {formatAccuracyLabel(accuracy)}
-                    </p>
+                    <LocationQualityBadge accuracyM={accuracy} />
+                    <LocationPlaceDetails
+                      latitude={alert.latitude!}
+                      longitude={alert.longitude!}
+                      className="rounded-lg border border-border bg-surface p-3"
+                    />
                     {alert.locationCapturedAt ? (
                       <p className="text-xs text-muted">
                         Location captured:{" "}

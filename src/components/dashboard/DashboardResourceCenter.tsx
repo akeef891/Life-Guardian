@@ -4,14 +4,14 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
 import { LocalDateTime } from "@/components/datetime/LocalDateTime";
+import { LocationQualityBadge } from "@/components/geolocation/LocationQualityBadge";
 import { useLocale } from "@/components/i18n/LocaleProvider";
 import { Skeleton } from "@/components/ui/Skeleton";
-import {
-  fetchNearbyResourcesClient,
-  requestUserCoordinates,
-} from "@/lib/resources/client-fetch-nearby";
+import { formatDistanceFromMeters } from "@/lib/geolocation/format-distance";
+import { loadResourcesWithHighAccuracyGps } from "@/lib/resources/client-fetch-nearby";
 import { ROUTES } from "@/lib/constants/routes";
 import type { EmergencyResource, NearbyResourcesResult } from "@/lib/services/emergency-resources.service";
+import type { GeolocationSuccess } from "@/lib/geolocation/get-accurate-position";
 import type { SafetyCheckInStatus } from "@/types/safety-check-in";
 import type { CommunityAlertDto } from "@/types/community-alert";
 
@@ -51,11 +51,15 @@ function ResourceSnippet({
     );
   }
 
+  const distanceM =
+    resource.distanceM ??
+    (Number.isFinite(resource.distanceKm) ? Math.round(resource.distanceKm * 1000) : 0);
+
   return (
     <div className="min-w-0 rounded-xl border border-border bg-background p-3">
       <p className="text-xs font-semibold uppercase text-muted">{label}</p>
       <p className="mt-1 break-words text-sm font-semibold text-foreground">{resource.name}</p>
-      <p className="text-xs text-muted">{resource.distanceKm} km</p>
+      <p className="text-xs text-muted">{formatDistanceFromMeters(distanceM)} away</p>
       <a
         href={resource.mapsUrl}
         target="_blank"
@@ -75,6 +79,7 @@ export function DashboardResourceCenter({
 }: Props) {
   const { dictionary: t } = useLocale();
   const [data, setData] = useState<NearbyResourcesResult | null>(null);
+  const [gps, setGps] = useState<GeolocationSuccess | null>(null);
   const [loading, setLoading] = useState(false);
   const [unavailable, setUnavailable] = useState(false);
   const [locationDenied, setLocationDenied] = useState(false);
@@ -87,23 +92,17 @@ export function DashboardResourceCenter({
     setLoading(true);
     setLocationDenied(false);
 
-    try {
-      const position = await requestUserCoordinates({
-        enableHighAccuracy: false,
-        timeout: 12000,
-        maximumAge: 300000,
-      });
-      const result = await fetchNearbyResourcesClient(
-        position.coords.latitude,
-        position.coords.longitude,
-      );
-      setData(result.data);
-      setUnavailable(result.unavailable);
-    } catch {
+    const result = await loadResourcesWithHighAccuracyGps();
+
+    if (result.gps) {
+      setGps(result.gps);
+    } else if (result.error === "permission-denied") {
       setLocationDenied(true);
-    } finally {
-      setLoading(false);
     }
+
+    setData(result.data);
+    setUnavailable(result.unavailable);
+    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -129,6 +128,12 @@ export function DashboardResourceCenter({
           View all →
         </Link>
       </div>
+
+      {gps ? (
+        <div className="mt-3">
+          <LocationQualityBadge accuracyM={gps.accuracy} />
+        </div>
+      ) : null}
 
       {unavailable && !loading ? (
         <p className="mt-3 rounded-lg border border-amber-200/80 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100">

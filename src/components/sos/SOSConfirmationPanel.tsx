@@ -1,5 +1,7 @@
 "use client";
 
+import { LocationPlaceDetails } from "@/components/geolocation/LocationPlaceDetails";
+import { LocationQualityBadge } from "@/components/geolocation/LocationQualityBadge";
 import { formatSosDateTime, getBrowserTimeZone } from "@/lib/datetime/format-datetime";
 import type { SosConfirmationDto } from "@/types/sos";
 
@@ -50,14 +52,23 @@ export function SOSConfirmationPanel({ confirmation }: SOSConfirmationPanelProps
           <dt className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
             Current location
           </dt>
-          <dd className="mt-1 break-words text-sm font-medium text-emerald-900">
-            {confirmation.locationLabel}
-          </dd>
-          {confirmation.locationAccuracy != null ? (
-            <dd className="mt-1 text-xs text-emerald-800">
-              GPS accuracy: ±{Math.round(confirmation.locationAccuracy)}m
+          {confirmation.latitude != null && confirmation.longitude != null ? (
+            <>
+              <dd className="mt-2">
+                <LocationQualityBadge accuracyM={confirmation.locationAccuracy} />
+              </dd>
+              <dd className="mt-3">
+                <LocationPlaceDetails
+                  latitude={confirmation.latitude}
+                  longitude={confirmation.longitude}
+                />
+              </dd>
+            </>
+          ) : (
+            <dd className="mt-1 break-words text-sm font-medium text-emerald-900">
+              {confirmation.locationLabel}
             </dd>
-          ) : null}
+          )}
           {confirmation.mapsUrl ? (
             <a
               href={confirmation.mapsUrl}

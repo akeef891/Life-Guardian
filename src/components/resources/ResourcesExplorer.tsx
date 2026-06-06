@@ -4,68 +4,63 @@ import { useCallback, useEffect, useState } from "react";
 import { logActivityEvent } from "@/app/(app)/activity/actions";
 import { ResourceCard } from "@/components/resources/ResourceCard";
 import { EmergencyMap } from "@/components/resources/EmergencyMap";
+import { LocationPlaceDetails } from "@/components/geolocation/LocationPlaceDetails";
+import { LocationQualityBadge } from "@/components/geolocation/LocationQualityBadge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SkeletonCard } from "@/components/ui/Skeleton";
 import { useLocale } from "@/components/i18n/LocaleProvider";
 import {
-  fetchNearbyResourcesClient,
-  requestUserCoordinates,
+  loadResourcesWithHighAccuracyGps,
   type NearbyResourcesDiagnostics,
 } from "@/lib/resources/client-fetch-nearby";
+import type { GeolocationSuccess } from "@/lib/geolocation/get-accurate-position";
 import type { NearbyResourcesResult } from "@/lib/services/emergency-resources.service";
 import { ACTIVITY_EVENT_KIND } from "@/types/activity-log";
 
 export function ResourcesExplorer() {
   const { dictionary: t } = useLocale();
   const [data, setData] = useState<NearbyResourcesResult | null>(null);
+  const [gps, setGps] = useState<GeolocationSuccess | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [unavailable, setUnavailable] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loggedOpen, setLoggedOpen] = useState(false);
   const [diagnostics, setDiagnostics] = useState<NearbyResourcesDiagnostics | null>(null);
-  const [autoLoaded, setAutoLoaded] = useState(false);
 
-  const fetchResources = useCallback(
-    async (lat: number, lng: number) => {
-      setLoading(true);
-      setError(null);
-      setUnavailable(false);
+  const loadResources = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    setUnavailable(false);
 
-      const result = await fetchNearbyResourcesClient(lat, lng);
-      setDiagnostics(result.diagnostics);
+    const result = await loadResourcesWithHighAccuracyGps();
+    setDiagnostics(result.diagnostics);
 
-      if (result.error && !result.data) {
-        setError(t.resources.loadError);
-        setData(null);
-        setUnavailable(result.unavailable);
-      } else if (result.data) {
-        setData(result.data);
-        setUnavailable(result.unavailable);
+    if (!result.gps) {
+      if (result.error === "permission-denied" || result.error === "unsupported") {
+        setError(t.resources.locationError);
+      } else if (result.error) {
+        setError(t.resources.gpsTimeout);
       }
-
-      setLoading(false);
-    },
-    [t.resources.loadError],
-  );
-
-  const useMyLocation = useCallback(async () => {
-    if (!navigator.geolocation) {
-      setError(t.resources.locationError);
+      setData(null);
+      setGps(null);
       setLoading(false);
       return;
     }
 
-    setLoading(true);
-    setError(null);
+    setGps(result.gps);
 
-    try {
-      const position = await requestUserCoordinates();
-      await fetchResources(position.coords.latitude, position.coords.longitude);
-    } catch {
-      setError(t.resources.locationError);
+    if (result.error && !result.data) {
+      setError(t.resources.loadError);
+      setData(null);
+      setUnavailable(result.unavailable);
       setLoading(false);
+      return;
     }
-  }, [fetchResources, t.resources.locationError]);
+
+    setData(result.data);
+    setUnavailable(result.unavailable);
+    setLoading(false);
+  }, [t.resources.loadError, t.resources.locationError, t.resources.gpsTimeout]);
 
   useEffect(() => {
     if (!loggedOpen) {
@@ -79,11 +74,8 @@ export function ResourcesExplorer() {
   }, [loggedOpen]);
 
   useEffect(() => {
-    if (!autoLoaded) {
-      setAutoLoaded(true);
-      void useMyLocation();
-    }
-  }, [autoLoaded, useMyLocation]);
+    void loadResources();
+  }, [loadResources]);
 
   const hasAny =
     data &&
@@ -93,16 +85,23 @@ export function ResourcesExplorer() {
 
   return (
     <div className="min-w-0 space-y-6 overflow-x-hidden">
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <button
           type="button"
-          onClick={() => void useMyLocation()}
+          onClick={() => void loadResources()}
           disabled={loading}
           className="inline-flex min-h-11 min-w-[11rem] items-center justify-center rounded-lg bg-brand px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-brand-dark focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/30 disabled:opacity-60"
         >
-          {loading ? t.common.loading : t.resources.useLocation}
+          {loading ? t.resources.acquiringGps : t.resources.refreshLocation}
         </button>
+        {gps ? <LocationQualityBadge accuracyM={gps.accuracy} /> : null}
       </div>
+
+      {loading ? (
+        <p className="text-sm text-muted" role="status">
+          {t.resources.acquiringGps}
+        </p>
+      ) : null}
 
       {error ? (
         <p
@@ -124,10 +123,21 @@ export function ResourcesExplorer() {
 
       {process.env.NODE_ENV !== "production" && diagnostics ? (
         <p className="rounded-lg border border-border bg-surface px-3 py-2 font-mono text-xs text-muted">
-          diag: lat={diagnostics.lat} lng={diagnostics.lng} http={diagnostics.httpStatus} h=
-          {diagnostics.hospitalCount} p={diagnostics.policeCount} a={diagnostics.ambulanceCount}{" "}
-          unavailable={String(diagnostics.unavailable)} {diagnostics.durationMs}ms
+          diag: lat={diagnostics.lat} lng={diagnostics.lng} acc={diagnostics.accuracyM}m gpsAttempts=
+          {diagnostics.gpsAttempts} radius={diagnostics.searchRadiusM}m h={diagnostics.hospitalCount}{" "}
+          p={diagnostics.policeCount} a={diagnostics.ambulanceCount} cache=
+          {String(diagnostics.cacheHit)} {diagnostics.durationMs}ms
         </p>
+      ) : null}
+
+      {data?.meta?.searchRadiusM != null && !loading ? (
+        <p className="text-xs text-muted" role="status">
+          Search radius: {(data.meta.searchRadiusM / 1000).toFixed(1)} km from your GPS position
+        </p>
+      ) : null}
+
+      {gps ? (
+        <LocationPlaceDetails latitude={gps.latitude} longitude={gps.longitude} className="rounded-xl border border-border bg-background p-4" />
       ) : null}
 
       {loading ? (
@@ -136,11 +146,11 @@ export function ResourcesExplorer() {
           <SkeletonCard />
         </div>
       ) : (
-        <EmergencyMap data={data} />
+        <EmergencyMap data={data} accuracyM={gps?.accuracy} />
       )}
 
       {showNoResults ? (
-        <EmptyState title={t.resources.noResults} description={t.resources.description} />
+        <EmptyState title={t.resources.noResults} description={t.resources.noResultsHint} />
       ) : null}
 
       {data && data.hospitals.length > 0 ? (
@@ -151,11 +161,7 @@ export function ResourcesExplorer() {
           <ul className="mt-3 space-y-3">
             {data.hospitals.map((r) => (
               <li key={r.id} className="min-w-0">
-                <ResourceCard
-                  resource={r}
-                  openMapsLabel={t.common.openMaps}
-                  distanceLabel={t.common.distance}
-                />
+                <ResourceCard resource={r} openMapsLabel={t.common.openMaps} />
               </li>
             ))}
           </ul>
@@ -170,11 +176,7 @@ export function ResourcesExplorer() {
           <ul className="mt-3 space-y-3">
             {data.police.map((r) => (
               <li key={r.id} className="min-w-0">
-                <ResourceCard
-                  resource={r}
-                  openMapsLabel={t.common.openMaps}
-                  distanceLabel={t.common.distance}
-                />
+                <ResourceCard resource={r} openMapsLabel={t.common.openMaps} />
               </li>
             ))}
           </ul>
@@ -189,11 +191,7 @@ export function ResourcesExplorer() {
           <ul className="mt-3 space-y-3">
             {data.ambulances.map((r) => (
               <li key={r.id} className="min-w-0">
-                <ResourceCard
-                  resource={r}
-                  openMapsLabel={t.common.openMaps}
-                  distanceLabel={t.common.distance}
-                />
+                <ResourceCard resource={r} openMapsLabel={t.common.openMaps} />
               </li>
             ))}
           </ul>

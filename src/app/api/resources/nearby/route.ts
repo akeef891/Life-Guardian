@@ -12,7 +12,6 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const lat = Number.parseFloat(searchParams.get("lat") ?? "");
   const lng = Number.parseFloat(searchParams.get("lng") ?? "");
-  const radius = Number.parseInt(searchParams.get("radius") ?? "12000", 10);
 
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
     console.warn(`${LOG_PREFIX} invalid coordinates`, {
@@ -22,20 +21,18 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "lat and lng are required" }, { status: 400 });
   }
 
-  const safeRadius = Number.isFinite(radius) && radius > 0 ? radius : 12000;
-
   try {
-    const result = await getNearbyEmergencyResources(lat, lng, safeRadius);
+    const result = await getNearbyEmergencyResources(lat, lng);
     const body = toNearbyResourcesApiResponse(result);
 
     console.info(`${LOG_PREFIX} success`, {
       lat,
       lng,
-      radius: safeRadius,
       unavailable: Boolean(result.unavailable),
       hospitals: result.hospitals.length,
       police: result.police.length,
       ambulances: result.ambulances.length,
+      searchRadiusM: result.meta?.searchRadiusM,
       elementCount: result.meta?.elementCount ?? 0,
       endpoint: result.meta?.endpoint,
       attempts: result.meta?.attempts,
@@ -44,7 +41,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(body, {
       status: 200,
-      headers: { "Cache-Control": "no-store" },
+      headers: { "Cache-Control": "private, max-age=120" },
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";

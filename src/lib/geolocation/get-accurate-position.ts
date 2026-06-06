@@ -1,26 +1,33 @@
+import { getLocationQuality } from "@/lib/geolocation/location-quality";
+
 export type GeolocationSuccess = {
   ok: true;
   latitude: number;
   longitude: number;
   accuracy: number;
   timestamp: number;
+  attempts: number;
 };
 
 export type GeolocationFailure = {
   ok: false;
   reason: "permission-denied" | "unavailable" | "timeout" | "unsupported" | "failed";
+  attempts: number;
 };
 
 export type GeolocationResult = GeolocationSuccess | GeolocationFailure;
 
-const GEO_OPTIONS: PositionOptions = {
+/** Production GPS settings — accuracy over speed, no cached fixes. */
+export const HIGH_ACCURACY_GEO_OPTIONS: PositionOptions = {
   enableHighAccuracy: true,
-  timeout: 15_000,
+  timeout: 30_000,
   maximumAge: 0,
 };
 
-/** Retry once when the first fix is worse than this threshold (meters). */
-const POOR_ACCURACY_METERS = 100;
+const MAX_ATTEMPTS = 3;
+const RETRY_IF_ACCURACY_M = 100;
+const IMPROVE_IF_ACCURACY_M = 50;
+const GPS_RETRY_DELAY_MS = 800;
 
 function mapGeolocationError(error: GeolocationPositionError): GeolocationFailure["reason"] {
   if (error.code === error.PERMISSION_DENIED) {
@@ -35,10 +42,12 @@ function mapGeolocationError(error: GeolocationPositionError): GeolocationFailur
   return "failed";
 }
 
-function getCurrentPositionOnce(): Promise<GeolocationResult> {
+function getCurrentPositionOnce(
+  options: PositionOptions = HIGH_ACCURACY_GEO_OPTIONS,
+): Promise<GeolocationResult> {
   return new Promise((resolve) => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
-      resolve({ ok: false, reason: "unsupported" });
+      resolve({ ok: false, reason: "unsupported", attempts: 0 });
       return;
     }
 
@@ -50,37 +59,91 @@ function getCurrentPositionOnce(): Promise<GeolocationResult> {
           longitude: position.coords.longitude,
           accuracy: position.coords.accuracy,
           timestamp: position.timestamp,
+          attempts: 1,
         });
       },
       (error) => {
-        resolve({ ok: false, reason: mapGeolocationError(error) });
+        resolve({ ok: false, reason: mapGeolocationError(error), attempts: 1 });
       },
-      GEO_OPTIONS,
+      options,
     );
   });
 }
 
+function isBetterReading(
+  candidate: GeolocationSuccess,
+  current: GeolocationSuccess | null,
+): boolean {
+  if (!current) {
+    return true;
+  }
+  return candidate.accuracy < current.accuracy;
+}
+
+function shouldContinueAttempts(
+  best: GeolocationSuccess,
+  attempt: number,
+): boolean {
+  if (attempt >= MAX_ATTEMPTS) {
+    return false;
+  }
+  if (best.accuracy > RETRY_IF_ACCURACY_M) {
+    return true;
+  }
+  if (best.accuracy > IMPROVE_IF_ACCURACY_M) {
+    return true;
+  }
+  return false;
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 /**
- * Uses getCurrentPosition with high accuracy settings.
- * Retries once when the first reading accuracy is poor.
+ * Acquires the best available GPS fix using getCurrentPosition only.
+ * Up to 3 attempts; retries when accuracy > 100m, improves when > 50m.
  */
 export async function getAccuratePosition(): Promise<GeolocationResult> {
-  const first = await getCurrentPositionOnce();
+  let best: GeolocationSuccess | null = null;
+  let lastFailure: GeolocationFailure | null = null;
+  let attempts = 0;
 
-  if (!first.ok) {
-    return first;
+  while (attempts < MAX_ATTEMPTS) {
+    if (attempts > 0) {
+      await delay(GPS_RETRY_DELAY_MS);
+    }
+
+    attempts += 1;
+    const reading = await getCurrentPositionOnce();
+
+    if (!reading.ok) {
+      lastFailure = { ...reading, attempts };
+      continue;
+    }
+
+    const success: GeolocationSuccess = { ...reading, attempts };
+
+    if (isBetterReading(success, best)) {
+      best = success;
+    }
+
+    if (best && !shouldContinueAttempts(best, attempts)) {
+      break;
+    }
   }
 
-  if (first.accuracy <= POOR_ACCURACY_METERS) {
-    return first;
+  if (best) {
+    return { ...best, attempts };
   }
 
-  const retry = await getCurrentPositionOnce();
-  if (!retry.ok) {
-    return first;
-  }
-
-  return retry.accuracy < first.accuracy ? retry : first;
+  return (
+    lastFailure ?? {
+      ok: false,
+      reason: "failed",
+      attempts,
+    }
+  );
 }
 
 /** Full precision for map URLs (~1cm at equator with 7 decimals). */
@@ -94,15 +157,11 @@ export function buildGoogleMapsUrl(latitude: number, longitude: number): string 
   return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
 }
 
-export function formatAccuracyLabel(accuracy: number | null | undefined): string {
-  if (accuracy == null || !Number.isFinite(accuracy)) {
-    return "Unknown accuracy";
+export { formatLocationQualityLabel as formatAccuracyLabel } from "@/lib/geolocation/location-quality";
+
+export function getAccuracyQuality(accuracyM: number | null | undefined) {
+  if (accuracyM == null || !Number.isFinite(accuracyM)) {
+    return null;
   }
-  if (accuracy < 20) {
-    return `High accuracy (±${Math.round(accuracy)}m)`;
-  }
-  if (accuracy < 80) {
-    return `Moderate accuracy (±${Math.round(accuracy)}m)`;
-  }
-  return `Low accuracy (±${Math.round(accuracy)}m) — GPS may be off by ~100m indoors`;
+  return getLocationQuality(accuracyM);
 }

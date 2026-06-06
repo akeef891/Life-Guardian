@@ -20,20 +20,23 @@ const EmergencyMapInner = dynamic(
 
 type EmergencyMapProps = {
   data: NearbyResourcesResult | null;
+  accuracyM?: number | null;
 };
 
-export function EmergencyMap({ data }: EmergencyMapProps) {
+export function EmergencyMap({ data, accuracyM }: EmergencyMapProps) {
   if (!data) {
     return (
       <div className="flex h-72 items-center justify-center rounded-xl border border-dashed border-border bg-background sm:h-96">
-        <p className="text-sm text-muted">Enable location to view the emergency map.</p>
+        <p className="px-4 text-center text-sm text-muted">
+          Acquiring high-accuracy GPS to center the map on your exact position…
+        </p>
       </div>
     );
   }
 
   return (
     <div className="min-w-0 h-72 overflow-hidden rounded-xl border border-border sm:h-96">
-      <EmergencyMapInner data={data} />
+      <EmergencyMapInner data={data} accuracyM={accuracyM} />
     </div>
   );
 }

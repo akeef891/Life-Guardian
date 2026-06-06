@@ -22,12 +22,16 @@ export const en = {
     police: "Nearby Police Stations",
     ambulances: "Nearby Ambulance Services",
     useLocation: "Use my location",
+    refreshLocation: "Refresh GPS & resources",
+    acquiringGps: "Acquiring high-accuracy GPS (up to 30s)…",
+    gpsTimeout: "Could not obtain a GPS fix in time. Move outdoors and try again.",
     locationError: "Unable to get your location.",
     locationHint: "Enable location on the Resources page to see nearby services.",
     loadError: "Could not load the resource list. Please try again.",
     unavailable:
       "Live map data is temporarily unavailable. You can still use SOS and your emergency profile.",
     noResults: "No resources found nearby.",
+    noResultsHint: "No hospitals, police, or ambulance services were found within 10 km of your GPS position.",
   },
   checkIn: {
     title: "Family Safety Check-In",
