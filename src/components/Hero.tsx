@@ -26,25 +26,25 @@ export function Hero() {
       <div className="absolute -top-24 right-0 -z-10 h-96 w-96 rounded-full bg-brand/10 blur-3xl" aria-hidden />
       <div className="absolute bottom-0 left-0 -z-10 h-72 w-72 rounded-full bg-accent/10 blur-3xl" aria-hidden />
 
-      <div className="mx-auto max-w-6xl px-4 pb-16 pt-12 sm:px-6 sm:pb-24 sm:pt-16 lg:pb-28 lg:pt-20">
-        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-          <div>
+      <div className="mx-auto min-w-0 max-w-6xl px-4 pb-16 pt-12 sm:px-6 sm:pb-24 sm:pt-16 lg:pb-28 lg:pt-20">
+        <div className="grid min-w-0 items-center gap-12 lg:grid-cols-2 lg:gap-16">
+          <div className="min-w-0">
             <div className="inline-flex items-center gap-2 rounded-full border border-brand/25 bg-brand-light/80 px-4 py-1.5 text-sm font-medium text-brand-dark dark:text-brand">
               <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emergency opacity-60" />
+                <span className="absolute inline-flex h-full w-full motion-safe:animate-ping rounded-full bg-emergency opacity-60" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-emergency" />
               </span>
               Built for real-world emergencies
             </div>
 
-            <h1 className="mt-6 text-4xl font-bold leading-[1.1] tracking-tight text-foreground sm:text-5xl lg:text-[3.25rem]">
+            <h1 className="mt-6 break-words text-4xl font-bold leading-[1.1] tracking-tight text-foreground sm:text-5xl lg:text-[3.25rem]">
               Critical help starts with{" "}
               <span className="bg-gradient-to-r from-brand to-accent bg-clip-text text-transparent">
                 the right information
               </span>
             </h1>
 
-            <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted sm:text-xl">
+            <p className="mt-6 max-w-xl break-words text-lg leading-relaxed text-muted sm:text-xl">
               Life Guardian helps people during emergencies by giving first responders,
               caregivers, and family instant access to medical details, a scannable QR
               emergency card, and SOS alerts—so support arrives faster when every second
@@ -60,24 +60,24 @@ export function Hero() {
               ))}
             </ul>
 
-            <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
+            <div className="mt-10 flex min-w-0 flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center">
               <Link
                 href={ROUTES.signUp}
-                className="group inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-brand px-8 text-base font-semibold text-white shadow-lg shadow-brand/25 transition-all hover:bg-brand-dark hover:shadow-xl hover:shadow-brand/30"
+                className="group inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand px-8 text-base font-semibold text-white shadow-lg shadow-brand/25 transition-colors hover:bg-brand-dark hover:shadow-xl hover:shadow-brand/30 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/40 sm:w-auto"
               >
                 Get Started
                 <ArrowRightIcon className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />
               </Link>
               <Link
                 href={`${ROUTES.home}#how-it-works`}
-                className="inline-flex h-12 items-center justify-center rounded-xl border border-border bg-surface-elevated px-8 text-base font-semibold text-foreground transition-colors hover:border-brand/30 hover:bg-brand-50"
+                className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-border bg-surface-elevated px-8 text-base font-semibold text-foreground transition-colors hover:border-brand/30 hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/40 sm:w-auto"
               >
                 See how it works
               </Link>
             </div>
           </div>
 
-          <div className="relative mx-auto w-full max-w-md lg:max-w-none">
+          <div className="relative mx-auto min-w-0 w-full max-w-md lg:max-w-none">
             <div className="absolute -inset-4 rounded-3xl bg-gradient-to-br from-brand/20 via-transparent to-accent/10 blur-2xl" aria-hidden />
             <div className="relative overflow-hidden rounded-2xl border border-border bg-surface-elevated shadow-2xl shadow-brand/10">
               <div className="border-b border-border bg-emergency px-5 py-3">

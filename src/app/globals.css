@@ -17,6 +17,12 @@
   --sos: #dc2626;
   --hero-gradient-start: #f0f9fc;
   --hero-gradient-end: #ffffff;
+  /* Footer: fixed dark theme — never tied to --foreground (breaks in dark mode) */
+  --footer-bg: #0c1222;
+  --footer-text: #f8fafc;
+  --footer-muted: rgba(248, 250, 252, 0.75);
+  --footer-subtle: rgba(248, 250, 252, 0.55);
+  --footer-border: rgba(248, 250, 252, 0.12);
 }
 
 @theme inline {
@@ -60,11 +66,18 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-overflow-scrolling: touch;
 }
 
 html {
   scroll-behavior: smooth;
   overflow-x: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 html,

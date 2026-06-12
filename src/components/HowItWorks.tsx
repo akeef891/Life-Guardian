@@ -33,17 +33,17 @@ export function HowItWorks() {
   return (
     <section
       id="how-it-works"
-      className="scroll-mt-20 py-20 sm:py-28"
+      className="scroll-mt-20 overflow-hidden py-16 sm:py-24 lg:py-28"
       aria-labelledby="how-it-works-heading"
     >
-      <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <div className="mx-auto max-w-2xl text-center">
+      <div className="mx-auto min-w-0 max-w-6xl px-4 sm:px-6">
+        <div className="mx-auto min-w-0 max-w-2xl text-center">
           <p className="text-sm font-semibold uppercase tracking-wider text-brand">
             How it works
           </p>
           <h2
             id="how-it-works-heading"
-            className="mt-3 text-3xl font-bold tracking-tight text-foreground sm:text-4xl"
+            className="mt-3 break-words text-3xl font-bold tracking-tight text-foreground sm:text-4xl"
           >
             Four steps to emergency readiness
           </h2>
@@ -53,7 +53,7 @@ export function HowItWorks() {
           </p>
         </div>
 
-        <ol className="relative mt-16 space-y-8 lg:space-y-0">
+        <ol className="relative mt-12 min-w-0 space-y-8 sm:mt-16 lg:space-y-0">
           <div
             className="absolute left-8 top-8 hidden h-[calc(100%-4rem)] w-px bg-gradient-to-b from-brand via-brand/40 to-transparent lg:left-1/2 lg:block lg:-translate-x-px"
             aria-hidden
@@ -65,11 +65,11 @@ export function HowItWorks() {
             return (
               <li
                 key={item.step}
-                className={`relative flex flex-col gap-6 lg:flex-row lg:items-center lg:gap-12 ${
+                className={`relative flex min-w-0 flex-col gap-6 lg:flex-row lg:items-center lg:gap-12 ${
                   isEven ? "lg:flex-row-reverse" : ""
                 }`}
               >
-                <div className={`flex-1 ${isEven ? "lg:text-right" : ""}`}>
+                <div className={`min-w-0 flex-1 ${isEven ? "lg:text-right" : ""}`}>
                   <div
                     className={`inline-flex items-center gap-3 ${isEven ? "lg:flex-row-reverse" : ""}`}
                   >
@@ -80,7 +80,7 @@ export function HowItWorks() {
                       Step {item.step}
                     </span>
                   </div>
-                  <h3 className="mt-4 text-xl font-semibold text-foreground sm:text-2xl">
+                  <h3 className="mt-4 break-words text-xl font-semibold text-foreground sm:text-2xl">
                     {item.title}
                   </h3>
                   <p className="mt-3 text-base leading-relaxed text-muted">
@@ -111,17 +111,17 @@ export function HowItWorks() {
           })}
         </ol>
 
-        <div className="mt-16 rounded-2xl border border-brand/20 bg-gradient-to-br from-brand-50 to-surface-elevated p-8 text-center sm:p-12 dark:from-brand-light/20">
-          <h3 className="text-2xl font-bold text-foreground sm:text-3xl">
+        <div className="mt-12 min-w-0 rounded-2xl border border-brand/20 bg-gradient-to-br from-brand-50 to-surface-elevated p-6 text-center sm:mt-16 sm:p-10 lg:p-12 dark:from-brand-light/20">
+          <h3 className="break-words text-2xl font-bold text-foreground sm:text-3xl">
             Ready to protect yourself and your family?
           </h3>
-          <p className="mx-auto mt-3 max-w-xl text-muted">
+          <p className="mx-auto mt-3 max-w-xl break-words text-muted">
             Create your emergency profile in minutes and take the first step toward
             faster, clearer help during an emergency.
           </p>
           <Link
             href={ROUTES.dashboard}
-            className="group mt-8 inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-8 py-3.5 text-base font-semibold text-white shadow-lg shadow-brand/25 transition-all hover:bg-brand-dark"
+            className="group mt-8 inline-flex min-h-12 w-full max-w-sm items-center justify-center gap-2 rounded-xl bg-brand px-8 py-3.5 text-base font-semibold text-white shadow-lg shadow-brand/25 transition-colors hover:bg-brand-dark focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/40 sm:w-auto sm:max-w-none"
           >
             Get Started Free
             <ArrowRightIcon className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />

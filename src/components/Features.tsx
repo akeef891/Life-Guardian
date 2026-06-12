@@ -48,17 +48,17 @@ export function Features() {
   return (
     <section
       id="features"
-      className="scroll-mt-20 border-t border-border bg-surface py-20 sm:py-28"
+      className="scroll-mt-20 border-t border-border bg-surface py-16 sm:py-24 lg:py-28"
       aria-labelledby="features-heading"
     >
-      <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <div className="mx-auto max-w-2xl text-center">
+      <div className="mx-auto min-w-0 max-w-6xl px-4 sm:px-6">
+        <div className="mx-auto min-w-0 max-w-2xl text-center">
           <p className="text-sm font-semibold uppercase tracking-wider text-brand">
             Features
           </p>
           <h2
             id="features-heading"
-            className="mt-3 text-3xl font-bold tracking-tight text-foreground sm:text-4xl"
+            className="mt-3 break-words text-3xl font-bold tracking-tight text-foreground sm:text-4xl"
           >
             Prepared before the emergency happens
           </h2>
@@ -68,18 +68,18 @@ export function Features() {
           </p>
         </div>
 
-        <ul className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:gap-8">
+        <ul className="mt-12 grid min-w-0 gap-6 sm:mt-16 sm:grid-cols-2 lg:grid-cols-4 lg:gap-8">
           {FEATURES.map((feature) => (
             <li
               key={feature.title}
-              className="group flex flex-col rounded-2xl border border-border bg-surface-elevated p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-brand/30 hover:shadow-lg"
+              className="group flex min-w-0 flex-col rounded-2xl border border-border bg-surface-elevated p-6 shadow-sm transition-[border-color,box-shadow] duration-300 motion-safe:hover:-translate-y-0.5 motion-safe:hover:border-brand/30 motion-safe:hover:shadow-lg"
             >
               <div
                 className={`flex h-12 w-12 items-center justify-center rounded-xl ${feature.accent}`}
               >
                 <feature.Icon className="h-6 w-6" />
               </div>
-              <h3 className="mt-5 text-lg font-semibold text-foreground">
+              <h3 className="mt-5 break-words text-lg font-semibold text-foreground">
                 {feature.title}
               </h3>
               <p className="mt-3 flex-1 text-sm leading-relaxed text-muted">

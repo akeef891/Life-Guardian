@@ -5,50 +5,70 @@ export function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="mt-auto border-t border-border bg-foreground text-white">
-      <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
-        <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:justify-between">
-          <div className="max-w-sm">
-            <Link href={ROUTES.home} className="inline-flex items-center gap-2">
+    <footer
+      className="mt-auto w-full shrink-0 border-t border-[var(--footer-border)] bg-[var(--footer-bg)] text-[var(--footer-text)]"
+      aria-labelledby="footer-heading"
+    >
+      <h2 id="footer-heading" className="sr-only">
+        Site footer
+      </h2>
+      <div className="mx-auto min-w-0 max-w-7xl px-6 py-14 lg:px-8">
+        {/* Top: brand left, quick links right — flex + justify-between (not equal grid columns) */}
+        <div className="flex min-w-0 flex-col gap-10 lg:flex-row lg:items-start lg:justify-between lg:gap-12">
+          <div className="min-w-0 max-w-md">
+            <Link
+              href={ROUTES.home}
+              className="inline-flex items-center gap-2.5 rounded-lg focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/40"
+            >
               <span
-                className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand text-sm font-bold text-white"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand text-sm font-bold text-white"
                 aria-hidden
               >
                 LG
               </span>
-              <span className="text-lg font-semibold">Life Guardian</span>
+              <span className="text-lg font-semibold text-[var(--footer-text)]">
+                Life Guardian
+              </span>
             </Link>
-            <p className="mt-4 text-sm leading-relaxed text-white/70">
+            <p className="mt-4 max-w-[28rem] break-words text-sm leading-relaxed text-[var(--footer-muted)]">
               Life Guardian helps people during emergencies with instant access to
               medical information, QR emergency cards, and SOS alerts for families
               and caregivers.
             </p>
           </div>
 
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-wider text-white/90">
+          <nav aria-label="Footer quick links" className="min-w-0 shrink-0 lg:pt-0">
+            <p className="text-sm font-semibold uppercase tracking-wider text-[var(--footer-text)]">
               Quick Links
             </p>
-            <ul className="mt-4 grid grid-cols-2 gap-x-8 gap-y-2 sm:grid-cols-2">
+            <ul className="mt-4 grid grid-cols-2 gap-x-8 gap-y-2">
               {FOOTER_QUICK_LINKS.map((link) => (
-                <li key={link.href + link.label}>
+                <li key={link.href + link.label} className="min-w-0">
                   <Link
                     href={link.href}
-                    className="text-sm text-white/70 transition-colors hover:text-white"
+                    className="inline-block break-words py-0.5 text-sm text-[var(--footer-muted)] transition-colors hover:text-[var(--footer-text)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/40 rounded-sm"
                   >
                     {link.label}
                   </Link>
                 </li>
               ))}
             </ul>
-          </div>
+          </nav>
         </div>
 
-        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-8 sm:flex-row">
-          <p className="text-sm text-white/60">
+        {/* Divider */}
+        <div
+          className="mt-10 mb-8 border-t border-[var(--footer-border)]"
+          role="presentation"
+          aria-hidden
+        />
+
+        {/* Bottom: copyright + disclaimer on one baseline */}
+        <div className="flex flex-col items-center gap-4 text-center lg:flex-row lg:items-center lg:justify-between lg:text-left">
+          <p className="text-sm text-[var(--footer-subtle)]">
             © {currentYear} Life Guardian. All rights reserved.
           </p>
-          <p className="text-xs text-white/50">
+          <p className="max-w-xl break-words text-xs leading-relaxed text-[var(--footer-subtle)] lg:text-right">
             Not a substitute for professional emergency services. Call your local
             emergency number when in immediate danger.
           </p>
