@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Geist, Geist_Mono } from "next/font/google";
+import { BRAND_LOGO_ICON_PUBLIC } from "@/lib/constants/branding";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -21,6 +22,10 @@ export const metadata: Metadata = {
   description:
     "Instant access to emergency information, QR cards, and SOS alerts when it matters most.",
   manifest: "/manifest.json",
+  icons: {
+    icon: [{ url: BRAND_LOGO_ICON_PUBLIC, type: "image/png" }],
+    apple: [{ url: BRAND_LOGO_ICON_PUBLIC, type: "image/png" }],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BrandLogoFull } from "@/components/brand/BrandLogoFull";
 import { FOOTER_QUICK_LINKS, ROUTES } from "@/lib/constants/routes";
 
 export function Footer() {
@@ -13,22 +14,13 @@ export function Footer() {
         Site footer
       </h2>
       <div className="mx-auto min-w-0 max-w-7xl px-6 py-14 lg:px-8">
-        {/* Top: brand left, quick links right — flex + justify-between (not equal grid columns) */}
         <div className="flex min-w-0 flex-col gap-10 lg:flex-row lg:items-start lg:justify-between lg:gap-12">
           <div className="min-w-0 max-w-md">
             <Link
               href={ROUTES.home}
-              className="inline-flex items-center gap-2.5 rounded-lg focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/40"
+              className="inline-flex max-w-full rounded-lg focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/40"
             >
-              <span
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand text-sm font-bold text-white"
-                aria-hidden
-              >
-                LG
-              </span>
-              <span className="text-lg font-semibold text-[var(--footer-text)]">
-                Life Guardian
-              </span>
+              <BrandLogoFull />
             </Link>
             <p className="mt-4 max-w-[28rem] break-words text-sm leading-relaxed text-[var(--footer-muted)]">
               Life Guardian helps people during emergencies with instant access to
@@ -46,7 +38,7 @@ export function Footer() {
                 <li key={link.href + link.label} className="min-w-0">
                   <Link
                     href={link.href}
-                    className="inline-block break-words py-0.5 text-sm text-[var(--footer-muted)] transition-colors hover:text-[var(--footer-text)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/40 rounded-sm"
+                    className="inline-block break-words rounded-sm py-0.5 text-sm text-[var(--footer-muted)] transition-colors hover:text-[var(--footer-text)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/40"
                   >
                     {link.label}
                   </Link>
@@ -56,14 +48,12 @@ export function Footer() {
           </nav>
         </div>
 
-        {/* Divider */}
         <div
           className="mt-10 mb-8 border-t border-[var(--footer-border)]"
           role="presentation"
           aria-hidden
         />
 
-        {/* Bottom: copyright + disclaimer on one baseline */}
         <div className="flex flex-col items-center gap-4 text-center lg:flex-row lg:items-center lg:justify-between lg:text-left">
           <p className="text-sm text-[var(--footer-subtle)]">
             © {currentYear} Life Guardian. All rights reserved.

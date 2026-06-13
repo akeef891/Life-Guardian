@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useId, useState } from "react";
+import { BrandLogoIcon } from "@/components/brand/BrandLogoIcon";
 import { APP_NAV_LINKS, MARKETING_NAV_LINKS, ROUTES } from "@/lib/constants/routes";
 import { cn } from "@/lib/utils/cn";
 
@@ -88,15 +89,10 @@ export function Navbar({ variant = "marketing" }: NavbarProps) {
       <div className="mx-auto flex h-16 min-w-0 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
         <Link
           href={ROUTES.home}
-          className="flex min-w-0 shrink-0 items-center gap-2.5 font-semibold tracking-tight text-foreground focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/25"
+          className="flex min-w-0 shrink-0 items-center gap-3 font-semibold tracking-tight text-foreground focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/25"
         >
-          <span
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand text-sm font-bold text-white shadow-sm"
-            aria-hidden
-          >
-            LG
-          </span>
-          <span className="truncate">Life Guardian</span>
+          <BrandLogoIcon className="h-10 w-10" sizes="40px" priority />
+          <span className="truncate font-semibold">Life Guardian</span>
         </Link>
 
         <nav
@@ -185,6 +181,16 @@ export function Navbar({ variant = "marketing" }: NavbarProps) {
         aria-label="Mobile navigation"
         aria-hidden={!menuOpen}
       >
+        <div className="mb-2 border-b border-border px-1 pb-4">
+          <Link
+            href={ROUTES.home}
+            onClick={closeMenu}
+            className="inline-flex min-h-11 items-center gap-3 rounded-lg text-foreground focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/25"
+          >
+            <BrandLogoIcon className="h-11 w-11" sizes="44px" />
+            <span className="text-base font-semibold">Life Guardian</span>
+          </Link>
+        </div>
         {links.map((link) => (
           <NavLink
             key={`mobile-${link.href}`}
