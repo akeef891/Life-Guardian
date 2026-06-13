@@ -5,12 +5,15 @@ import { getOrCreateCurrentUserWithProfile } from "@/lib/auth/user-context";
 import { getLatestSafetyCheckIn } from "@/lib/services/safety-check-in.service";
 import { getServerLocale } from "@/lib/i18n/server-locale";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
+import { createPageMetadata } from "@/lib/seo/page-metadata";
 import type { SafetyCheckInStatus } from "@/types/safety-check-in";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createPageMetadata({
   title: "Safety Check-In",
-  description: "Family safety check-in for Life Guardian.",
-};
+  description:
+    "Share timely safety check-ins with trusted contacts and keep your emergency network informed with Life Guardian.",
+  path: "/check-in",
+});
 
 export default async function CheckInPage() {
   const { id: userId } = await getOrCreateCurrentUserWithProfile();

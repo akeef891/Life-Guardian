@@ -3,11 +3,14 @@ import { PageHeader } from "@/components/PageHeader";
 import { ResourcesExplorer } from "@/components/resources/ResourcesExplorer";
 import { getServerLocale } from "@/lib/i18n/server-locale";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
+import { createPageMetadata } from "@/lib/seo/page-metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createPageMetadata({
   title: "Emergency Resources",
-  description: "Find nearby hospitals, police, and ambulance services.",
-};
+  description:
+    "Locate nearby hospitals, police stations, and ambulance services with Life Guardian emergency resource discovery.",
+  path: "/resources",
+});
 
 export default async function ResourcesPage() {
   const locale = await getServerLocale();

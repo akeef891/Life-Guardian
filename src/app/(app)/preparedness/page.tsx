@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/PageHeader";
 import { PreparednessHub } from "@/components/preparedness/PreparednessHub";
+import { createPageMetadata } from "@/lib/seo/page-metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createPageMetadata({
   title: "Emergency Preparedness",
-  description: "Preparedness tips for common emergencies.",
-};
+  description:
+    "Prepare for road accidents, fire, flood, medical emergencies, and personal safety with Life Guardian preparedness guidance.",
+  path: "/preparedness",
+});
 
 export default function PreparednessPage() {
   return (
