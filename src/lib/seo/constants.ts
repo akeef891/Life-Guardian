@@ -17,12 +17,10 @@ export const SITE_KEYWORDS = [
 
 export const OG_IMAGE_PATH = "/logo/logo-full.png";
 
+/** Public routes only — exclude authenticated app pages (dashboard, profile, qr-card, sos). */
 export const SITEMAP_PATHS = [
   "/",
-  "/dashboard",
-  "/profile",
-  "/qr-card",
-  "/sos",
+  "/about",
   "/resources",
   "/check-in",
   "/preparedness",

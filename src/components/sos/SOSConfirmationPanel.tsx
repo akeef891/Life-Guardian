@@ -26,46 +26,50 @@ export function SOSConfirmationPanel({ confirmation }: SOSConfirmationPanelProps
           OK
         </span>
         <div className="min-w-0 flex-1">
-          <h2 className="text-lg font-bold text-emerald-900 sm:text-xl">SOS Activated</h2>
-          <p className="mt-1 text-sm text-emerald-800">
+          <h2 className="text-lg font-bold text-slate-900 sm:text-xl">SOS Activated</h2>
+          <p className="mt-1 text-sm text-slate-700">
             Your emergency alert was logged and delivery messages were prepared.
           </p>
         </div>
       </div>
 
       <dl className="mt-5 grid gap-3 sm:grid-cols-2">
-        <div className="rounded-xl border border-emerald-200 bg-white/80 p-3">
-          <dt className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+        <div className="rounded-xl border border-emerald-200 bg-white p-3">
+          <dt className="text-xs font-semibold uppercase tracking-wide text-slate-600">
             Contacts notified
           </dt>
-          <dd className="mt-1 text-2xl font-bold text-emerald-900">
+          <dd className="mt-1 text-2xl font-bold text-slate-900">
             {confirmation.contactsNotified}
           </dd>
         </div>
-        <div className="rounded-xl border border-emerald-200 bg-white/80 p-3">
-          <dt className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+        <div className="rounded-xl border border-emerald-200 bg-white p-3">
+          <dt className="text-xs font-semibold uppercase tracking-wide text-slate-600">
             Time sent
           </dt>
-          <dd className="mt-1 text-sm font-semibold text-emerald-900">{sentLabel}</dd>
+          <dd className="mt-1 text-sm font-semibold text-slate-900">{sentLabel}</dd>
         </div>
-        <div className="rounded-xl border border-emerald-200 bg-white/80 p-3 sm:col-span-2">
-          <dt className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+        <div className="rounded-xl border border-emerald-200 bg-white p-3 sm:col-span-2">
+          <dt className="text-xs font-semibold uppercase tracking-wide text-slate-600">
             Current location
           </dt>
           {confirmation.latitude != null && confirmation.longitude != null ? (
             <>
               <dd className="mt-2">
-                <LocationQualityBadge accuracyM={confirmation.locationAccuracy} />
+                <LocationQualityBadge
+                  accuracyM={confirmation.locationAccuracy}
+                  highContrast
+                />
               </dd>
               <dd className="mt-3">
                 <LocationPlaceDetails
                   latitude={confirmation.latitude}
                   longitude={confirmation.longitude}
+                  variant="success"
                 />
               </dd>
             </>
           ) : (
-            <dd className="mt-1 break-words text-sm font-medium text-emerald-900">
+            <dd className="mt-1 break-words text-sm font-medium text-slate-900">
               {confirmation.locationLabel}
             </dd>
           )}
@@ -74,7 +78,7 @@ export function SOSConfirmationPanel({ confirmation }: SOSConfirmationPanelProps
               href={confirmation.mapsUrl}
               target="_blank"
               rel="noreferrer"
-              className="mt-2 inline-flex min-h-10 items-center rounded-lg border border-emerald-300 bg-white px-3 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-50"
+              className="mt-2 inline-flex min-h-10 items-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50"
             >
               Open in Google Maps
             </a>
@@ -84,21 +88,21 @@ export function SOSConfirmationPanel({ confirmation }: SOSConfirmationPanelProps
 
       {confirmation.deliveryLinks.length > 0 ? (
         <div className="mt-5">
-          <h3 className="text-sm font-semibold text-emerald-900">Send to contacts</h3>
-          <p className="mt-1 text-xs text-emerald-800">
+          <h3 className="text-sm font-semibold text-slate-900">Send to contacts</h3>
+          <p className="mt-1 text-xs text-slate-700">
             Tap WhatsApp or SMS to open a pre-filled emergency message for each contact.
           </p>
           <ul className="mt-3 space-y-2">
             {confirmation.deliveryLinks.map((link) => (
               <li
                 key={link.contactId}
-                className="flex flex-col gap-2 rounded-xl border border-emerald-200 bg-white/80 p-3 sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col gap-2 rounded-xl border border-emerald-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-emerald-900">
+                  <p className="truncate text-sm font-semibold text-slate-900">
                     {link.contactName}
                   </p>
-                  <p className="truncate text-xs text-emerald-700">{link.phone}</p>
+                  <p className="truncate text-xs text-slate-700">{link.phone}</p>
                 </div>
                 <div className="flex w-full flex-col gap-2 sm:w-auto">
                   <div className="flex flex-wrap gap-2">
@@ -112,17 +116,17 @@ export function SOSConfirmationPanel({ confirmation }: SOSConfirmationPanelProps
                     </a>
                     <a
                       href={link.smsUrl}
-                      className="inline-flex min-h-10 flex-1 items-center justify-center rounded-lg border border-emerald-300 bg-white px-3 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-50 sm:flex-none"
+                      className="inline-flex min-h-10 flex-1 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-900 hover:bg-slate-50 sm:flex-none"
                     >
                       SMS
                     </a>
                   </div>
                   {link.responseUrl ? (
-                    <p className="break-all text-[11px] text-emerald-800">
+                    <p className="break-all text-[11px] text-slate-700">
                       Ack link:{" "}
                       <a
                         href={link.responseUrl}
-                        className="font-semibold underline"
+                        className="font-semibold text-slate-900 underline"
                         target="_blank"
                         rel="noreferrer"
                       >

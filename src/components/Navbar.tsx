@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useId, useState } from "react";
 import { BrandLogoIcon } from "@/components/brand/BrandLogoIcon";
+import { InstallAppButton } from "@/components/pwa/InstallAppButton";
+import { MobileInstallBanner } from "@/components/pwa/MobileInstallBanner";
 import { APP_NAV_LINKS, MARKETING_NAV_LINKS, ROUTES } from "@/lib/constants/routes";
 import { cn } from "@/lib/utils/cn";
 
@@ -86,6 +88,7 @@ export function Navbar({ variant = "marketing" }: NavbarProps) {
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/80 bg-background/95 backdrop-blur-md">
+      <MobileInstallBanner />
       <div className="mx-auto flex h-16 min-w-0 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
         <Link
           href={ROUTES.home}
@@ -105,6 +108,7 @@ export function Navbar({ variant = "marketing" }: NavbarProps) {
         </nav>
 
         <div className="flex shrink-0 items-center gap-2">
+          <InstallAppButton className="hidden md:inline-flex" />
           {variant === "marketing" ? (
             <Link
               href={ROUTES.signUp}

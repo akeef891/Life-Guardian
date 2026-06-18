@@ -3,6 +3,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { Geist, Geist_Mono } from "next/font/google";
 import { BRAND_LOGO_ICON_PUBLIC } from "@/lib/constants/branding";
 import { MicrosoftClarity } from "@/components/analytics/MicrosoftClarity";
+import { PwaInstallShell } from "@/components/pwa/PwaInstallShell";
 import {
   SITE_DESCRIPTION,
   SITE_KEYWORDS,
@@ -78,7 +79,9 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: getStructuredDataJsonLd() }}
         />
-        <ClerkProvider>{children}</ClerkProvider>
+        <PwaInstallShell>
+          <ClerkProvider>{children}</ClerkProvider>
+        </PwaInstallShell>
         <MicrosoftClarity />
       </body>
     </html>
