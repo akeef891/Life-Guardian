@@ -104,12 +104,22 @@ export function ResourcesExplorer() {
       ) : null}
 
       {error ? (
-        <p
+        <div
           className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200"
           role="alert"
         >
-          {error}
-        </p>
+          <p>{error}</p>
+          {error === t.resources.locationError ? (
+            <button
+              type="button"
+              onClick={() => void loadResources()}
+              disabled={loading}
+              className="mt-2 inline-flex min-h-10 items-center rounded-lg border border-red-300 bg-white px-3 py-2 text-xs font-semibold text-red-800 transition-colors hover:bg-red-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-300/40 disabled:opacity-60"
+            >
+              {t.common.retry}
+            </button>
+          ) : null}
+        </div>
       ) : null}
 
       {unavailable && !error ? (

@@ -1,4 +1,4 @@
-import { formatDistanceFromMeters } from "@/lib/geolocation/format-distance";
+import { formatResourceDistanceKmAway } from "@/lib/geolocation/format-distance";
 import type { EmergencyResource } from "@/lib/services/emergency-resources.service";
 
 type ResourceCardProps = {
@@ -21,7 +21,7 @@ export function ResourceCard({
           <h3 className="text-sm font-semibold text-foreground">{resource.name}</h3>
           <p className="mt-1 break-words text-xs text-muted">{resource.address}</p>
           <p className="mt-2 text-xs font-medium text-brand">
-            {formatDistanceFromMeters(distanceM)} away
+            Distance: {formatResourceDistanceKmAway(distanceM)} away
           </p>
         </div>
         <a

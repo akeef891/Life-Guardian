@@ -34,21 +34,12 @@ export type NearbyResourcesMeta = {
   searchRadiusM: number;
 };
 
-/** Progressive search: start tight, expand only when needed. */
-export const RESOURCE_SEARCH_RADII_M = [2_000, 5_000, 10_000] as const;
-const MIN_TOTAL_RESULTS = 3;
-
-function shouldExpandSearchRadius(
-  mapped: Pick<NearbyResourcesResult, "hospitals" | "police" | "ambulances">,
-): boolean {
-  const total = countTotalResources(mapped);
-  if (total < MIN_TOTAL_RESULTS) {
-    return true;
-  }
-  // Expand if any critical category is empty (nearest-first quality)
-  return mapped.hospitals.length === 0 || mapped.police.length === 0;
-}
+/** Primary 1.5 km, expand to 4 km when too few hospital/police results. */
+export const RESOURCE_SEARCH_RADII_M = [1_500, 4_000] as const;
+const MIN_PRIORITY_RESULTS = 3;
 const MAX_PER_TYPE = 12;
+/** Overpass default order is not distance-sorted — fetch enough to sort client-side. */
+const OVERPASS_OUT_LIMIT = 500;
 const FETCH_TIMEOUT_MS = 18_000;
 const RETRY_DELAY_MS = 600;
 const MAX_ATTEMPTS_PER_ENDPOINT = 2;
@@ -142,7 +133,7 @@ function buildOverpassQuery(lat: number, lon: number, radiusM: number): string {
   node["amenity"="clinic"]["emergency"="yes"](around:${radiusM},${lat},${lon});
   way["amenity"="clinic"]["emergency"="yes"](around:${radiusM},${lat},${lon});
 );
-out center ${MAX_PER_TYPE * 4};
+out center ${OVERPASS_OUT_LIMIT};
 `.trim();
 }
 
@@ -209,8 +200,21 @@ function setServerCache(lat: number, lon: number, result: NearbyResourcesResult)
   });
 }
 
-function countTotalResources(result: Pick<NearbyResourcesResult, "hospitals" | "police" | "ambulances">) {
-  return result.hospitals.length + result.police.length + result.ambulances.length;
+function countPriorityResources(
+  mapped: Pick<NearbyResourcesResult, "hospitals" | "police">,
+): number {
+  return mapped.hospitals.length + mapped.police.length;
+}
+
+function shouldExpandSearchRadius(
+  mapped: Pick<NearbyResourcesResult, "hospitals" | "police" | "ambulances">,
+  radiusM: number,
+  maxRadiusM: number,
+): boolean {
+  if (radiusM >= maxRadiusM) {
+    return false;
+  }
+  return countPriorityResources(mapped) < MIN_PRIORITY_RESULTS;
 }
 
 async function fetchWithTimeout(
@@ -289,6 +293,7 @@ function mapElementsToResources(
   elements: OverpassElement[],
   userLat: number,
   userLon: number,
+  maxRadiusM: number,
 ): Pick<NearbyResourcesResult, "hospitals" | "police" | "ambulances"> {
   const buckets: Record<EmergencyResourceType, EmergencyResource[]> = {
     hospital: [],
@@ -323,6 +328,10 @@ function mapElementsToResources(
           : "Ambulance Service");
 
     const distanceM = Math.round(haversineMeters(userLat, userLon, coords.lat, coords.lon));
+
+    if (distanceM > maxRadiusM) {
+      continue;
+    }
 
     buckets[type].push({
       id: key,
@@ -376,10 +385,12 @@ export async function getNearbyEmergencyResources(
   let lastMeta: Partial<NearbyResourcesMeta> = {};
 
   try {
+    const maxRadiusM = RESOURCE_SEARCH_RADII_M.at(-1)!;
+
     for (const radiusM of RESOURCE_SEARCH_RADII_M) {
       const query = buildOverpassQuery(latitude, longitude, radiusM);
       const { elements, endpoint, attempts } = await fetchOverpass(query);
-      lastMapped = mapElementsToResources(elements, latitude, longitude);
+      lastMapped = mapElementsToResources(elements, latitude, longitude, radiusM);
       lastMeta = {
         elementCount: elements.length,
         endpoint,
@@ -387,18 +398,20 @@ export async function getNearbyEmergencyResources(
         searchRadiusM: radiusM,
       };
 
-      const total = countTotalResources(lastMapped);
+      const priorityCount = countPriorityResources(lastMapped);
       logResource("info", "Radius search completed", {
         latitude,
         longitude,
         radiusM,
-        total,
+        priorityCount,
         hospitals: lastMapped.hospitals.length,
         police: lastMapped.police.length,
         ambulances: lastMapped.ambulances.length,
+        nearestHospitalM: lastMapped.hospitals[0]?.distanceM ?? null,
+        nearestPoliceM: lastMapped.police[0]?.distanceM ?? null,
       });
 
-      if (!shouldExpandSearchRadius(lastMapped) || radiusM === RESOURCE_SEARCH_RADII_M.at(-1)) {
+      if (!shouldExpandSearchRadius(lastMapped, radiusM, maxRadiusM)) {
         break;
       }
     }
