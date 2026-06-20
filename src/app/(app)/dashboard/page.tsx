@@ -57,6 +57,7 @@ export default async function DashboardPage() {
         id: true,
         createdAt: true,
         message: true,
+        mapsUrl: true,
         deliveryStatus: true,
         deliveredCount: true,
         status: true,

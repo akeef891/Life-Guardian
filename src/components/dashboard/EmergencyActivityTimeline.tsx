@@ -1,5 +1,9 @@
+"use client";
+
+import { useState } from "react";
 import type { EmergencyTimelineEvent } from "@/lib/dashboard/dashboard-timeline";
 import { LocalRelativeTime } from "@/components/datetime/LocalRelativeTime";
+import { SOSAlertActions } from "@/components/sos/SOSAlertActions";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ROUTES } from "@/lib/constants/routes";
 import { DashboardCard } from "./DashboardCard";
@@ -74,7 +78,13 @@ function kindStyles(eventKind: EmergencyTimelineEvent["kind"]) {
   }
 }
 
-export function EmergencyActivityTimeline({ events }: Props) {
+export function EmergencyActivityTimeline({ events: initialEvents }: Props) {
+  const [events, setEvents] = useState(initialEvents);
+
+  function handleAlertDeleted(alertId: string) {
+    setEvents((current) => current.filter((event) => event.alertId !== alertId));
+  }
+
   return (
     <DashboardCard className="mt-6 overflow-hidden">
       <div className="min-w-0">
@@ -99,6 +109,8 @@ export function EmergencyActivityTimeline({ events }: Props) {
         <ol className="relative mt-6 space-y-0 border-l border-border pl-4 sm:pl-6">
           {events.map((event, index) => {
             const styles = kindStyles(event.kind);
+            const showSosActions = event.kind === "sos_created" && event.alertId;
+
             return (
               <li
                 key={event.id}
@@ -134,6 +146,15 @@ export function EmergencyActivityTimeline({ events }: Props) {
                   </div>
                   {event.description ? (
                     <p className="mt-2 break-words text-sm text-muted">{event.description}</p>
+                  ) : null}
+                  {showSosActions ? (
+                    <div className="mt-3">
+                      <SOSAlertActions
+                        alertId={event.alertId!}
+                        mapsUrl={event.mapsUrl}
+                        onDeleted={handleAlertDeleted}
+                      />
+                    </div>
                   ) : null}
                 </div>
               </li>

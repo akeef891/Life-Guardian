@@ -1,10 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { LocalDateTime } from "@/components/datetime/LocalDateTime";
 import { LocationPlaceDetails } from "@/components/geolocation/LocationPlaceDetails";
 import { LocationQualityBadge } from "@/components/geolocation/LocationQualityBadge";
+import { SOSAlertActions } from "@/components/sos/SOSAlertActions";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { IncidentReportDownload } from "@/components/dashboard/IncidentReportDownload";
 import { SOS_ESCALATION_STATUS } from "@/types/emergency-response";
 
 type SOSHistoryItem = {
@@ -27,7 +28,13 @@ type SOSHistoryListProps = {
   alerts: SOSHistoryItem[];
 };
 
-export function SOSHistoryList({ alerts }: SOSHistoryListProps) {
+export function SOSHistoryList({ alerts: initialAlerts }: SOSHistoryListProps) {
+  const [alerts, setAlerts] = useState(initialAlerts);
+
+  function handleDeleted(alertId: string) {
+    setAlerts((current) => current.filter((alert) => alert.id !== alertId));
+  }
+
   return (
     <section className="mt-6 min-w-0 overflow-hidden rounded-2xl border border-border bg-surface p-4 sm:mt-8 sm:p-6">
       <h2 className="text-lg font-semibold text-foreground sm:text-xl">SOS History</h2>
@@ -92,16 +99,6 @@ export function SOSHistoryList({ alerts }: SOSHistoryListProps) {
                         <LocalDateTime value={alert.locationCapturedAt} mode="datetime" />
                       </p>
                     ) : null}
-                    {mapsUrl ? (
-                      <a
-                        href={mapsUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex min-h-10 w-full items-center justify-center rounded-lg border border-border px-3 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-surface sm:w-auto sm:justify-start"
-                      >
-                        View on Google Maps
-                      </a>
-                    ) : null}
                   </div>
                 ) : (
                   <p className="mt-2 text-sm text-muted">No location recorded for this alert.</p>
@@ -112,7 +109,13 @@ export function SOSHistoryList({ alerts }: SOSHistoryListProps) {
                 ) : null}
 
                 <div className="mt-3">
-                  <IncidentReportDownload alertId={alert.id} label="Download incident PDF" />
+                  <SOSAlertActions
+                    alertId={alert.id}
+                    mapsUrl={mapsUrl}
+                    layout="stacked"
+                    onDeleted={handleDeleted}
+                    className="sm:!flex-row sm:!flex-wrap sm:!items-center"
+                  />
                 </div>
               </li>
             );

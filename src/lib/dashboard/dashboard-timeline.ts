@@ -42,12 +42,16 @@ export type EmergencyTimelineEvent = {
   title: string;
   description?: string;
   at: Date;
+  /** Present on SOS-related events for owner actions (delete, PDF). */
+  alertId?: string;
+  mapsUrl?: string | null;
 };
 
 type SosAlertTimelineRow = {
   id: string;
   createdAt: Date;
   message: string | null;
+  mapsUrl?: string | null;
   deliveredCount?: number;
   deliveryStatus?: string;
   status: string;
@@ -119,6 +123,8 @@ function pushSosAlertEvents(events: EmergencyTimelineEvent[], sos: SosAlertTimel
     title: "SOS Created",
     description: sos.message ? `${sos.message} — ${deliveryNote}` : deliveryNote,
     at: sos.createdAt,
+    alertId: sos.id,
+    mapsUrl: sos.mapsUrl ?? null,
   });
 
   events.push({
@@ -127,6 +133,7 @@ function pushSosAlertEvents(events: EmergencyTimelineEvent[], sos: SosAlertTimel
     title: "SOS Triggered",
     description: deliveryNote,
     at: sos.createdAt,
+    alertId: sos.id,
   });
 
   for (const response of sos.responses) {
@@ -152,6 +159,7 @@ function pushSosAlertEvents(events: EmergencyTimelineEvent[], sos: SosAlertTimel
       title: "Escalation Triggered",
       description: "No contact response received in time. Alert escalated.",
       at: sos.escalatedAt,
+      alertId: sos.id,
     });
   }
 
@@ -162,6 +170,7 @@ function pushSosAlertEvents(events: EmergencyTimelineEvent[], sos: SosAlertTimel
       title: "Incident Closed",
       description: "All contacts responded or incident was resolved.",
       at: sos.closedAt,
+      alertId: sos.id,
     });
   }
 }

@@ -79,6 +79,24 @@ export type SosDashboardStats = {
   lastSosAt: Date | null;
 };
 
+/** Hard-delete an SOS alert owned by the user. Cascades contact responses via Prisma. */
+export async function deleteSosAlertForUser(userId: string, alertId: string): Promise<boolean> {
+  const alert = await prisma.sOSAlert.findFirst({
+    where: { id: alertId, userId },
+    select: { id: true },
+  });
+
+  if (!alert) {
+    return false;
+  }
+
+  await prisma.sOSAlert.delete({
+    where: { id: alertId },
+  });
+
+  return true;
+}
+
 export async function getSosDashboardStats(userId: string): Promise<SosDashboardStats> {
   const [totalSent, latest] = await Promise.all([
     prisma.sOSAlert.count({ where: { userId } }),
