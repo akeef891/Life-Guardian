@@ -49,6 +49,7 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   icons: {
     icon: [{ url: BRAND_LOGO_ICON_PUBLIC, type: "image/png" }],
+    shortcut: [{ url: BRAND_LOGO_ICON_PUBLIC, type: "image/png" }],
     apple: [{ url: BRAND_LOGO_ICON_PUBLIC, type: "image/png" }],
   },
   openGraph: getDefaultOpenGraph(),
