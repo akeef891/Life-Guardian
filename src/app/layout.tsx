@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Geist, Geist_Mono } from "next/font/google";
 import { BRAND_LOGO_ICON_PUBLIC } from "@/lib/constants/branding";
+import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
 import { MicrosoftClarity } from "@/components/analytics/MicrosoftClarity";
 import { PwaInstallShell } from "@/components/pwa/PwaInstallShell";
 import {
@@ -83,6 +84,7 @@ export default function RootLayout({
         <PwaInstallShell>
           <ClerkProvider>{children}</ClerkProvider>
         </PwaInstallShell>
+        <GoogleAnalytics />
         <MicrosoftClarity />
       </body>
     </html>
