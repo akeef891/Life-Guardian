@@ -1,11 +1,27 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import dynamic from "next/dynamic";
+import { useCallback, useState, useTransition } from "react";
 import { deleteSOSAlertAction } from "@/app/(app)/sos/delete-actions";
-import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { IncidentReportDownload } from "@/components/dashboard/IncidentReportDownload";
 import { useToast } from "@/components/ui/toast/ToastProvider";
 import { cn } from "@/lib/utils/cn";
+
+const IncidentReportDownload = dynamic(
+  () =>
+    import("@/components/dashboard/IncidentReportDownload").then(
+      (mod) => mod.IncidentReportDownload,
+    ),
+  {
+    loading: () => (
+      <span className="inline-flex min-h-11 min-w-[7rem] animate-pulse rounded-md border border-border bg-surface" />
+    ),
+  },
+);
+
+const ConfirmDialog = dynamic(
+  () => import("@/components/ui/ConfirmDialog").then((mod) => mod.ConfirmDialog),
+  { ssr: false },
+);
 
 type SOSAlertActionsProps = {
   alertId: string;
@@ -31,7 +47,7 @@ export function SOSAlertActions({
       ? "flex flex-col gap-2"
       : "flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center";
 
-  function handleDelete() {
+  const handleDelete = useCallback(() => {
     startTransition(async () => {
       const result = await deleteSOSAlertAction(alertId);
       setConfirmOpen(false);
@@ -44,7 +60,13 @@ export function SOSAlertActions({
 
       error(result.error ?? "Failed to delete SOS alert. Please try again.");
     });
-  }
+  }, [alertId, error, onDeleted, success]);
+
+  const handleCancel = useCallback(() => {
+    if (!isPending) {
+      setConfirmOpen(false);
+    }
+  }, [isPending]);
 
   return (
     <>
@@ -79,20 +101,18 @@ export function SOSAlertActions({
         </button>
       </div>
 
-      <ConfirmDialog
-        open={confirmOpen}
-        title="Delete SOS Alert?"
-        description="This action cannot be undone."
-        confirmLabel="Delete Alert"
-        cancelLabel="Cancel"
-        loading={isPending}
-        onConfirm={handleDelete}
-        onCancel={() => {
-          if (!isPending) {
-            setConfirmOpen(false);
-          }
-        }}
-      />
+      {confirmOpen ? (
+        <ConfirmDialog
+          open={confirmOpen}
+          title="Delete SOS Alert?"
+          description="This action cannot be undone."
+          confirmLabel="Delete Alert"
+          cancelLabel="Cancel"
+          loading={isPending}
+          onConfirm={handleDelete}
+          onCancel={handleCancel}
+        />
+      ) : null}
     </>
   );
 }

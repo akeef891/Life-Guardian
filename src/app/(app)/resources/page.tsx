@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/PageHeader";
-import { ResourcesExplorer } from "@/components/resources/ResourcesExplorer";
+import { ResourcesExplorerLazy } from "@/components/resources/resources-lazy";
 import { getServerLocale } from "@/lib/i18n/server-locale";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
 import { createPageMetadata } from "@/lib/seo/page-metadata";
@@ -19,7 +19,7 @@ export default async function ResourcesPage() {
   return (
     <div className="min-w-0">
       <PageHeader title={t.resources.title} description={t.resources.description} />
-      <ResourcesExplorer />
+      <ResourcesExplorerLazy />
     </div>
   );
 }

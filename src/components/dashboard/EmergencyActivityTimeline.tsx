@@ -1,12 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import dynamic from "next/dynamic";
+import { memo, useCallback, useState } from "react";
 import type { EmergencyTimelineEvent } from "@/lib/dashboard/dashboard-timeline";
 import { LocalRelativeTime } from "@/components/datetime/LocalRelativeTime";
-import { SOSAlertActions } from "@/components/sos/SOSAlertActions";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ROUTES } from "@/lib/constants/routes";
 import { DashboardCard } from "./DashboardCard";
+
+const SOSAlertActions = dynamic(
+  () => import("@/components/sos/SOSAlertActions").then((mod) => mod.SOSAlertActions),
+  { loading: () => null },
+);
 
 type Props = {
   events: EmergencyTimelineEvent[];
@@ -78,12 +83,73 @@ function kindStyles(eventKind: EmergencyTimelineEvent["kind"]) {
   }
 }
 
+const TimelineEventRow = memo(function TimelineEventRow({
+  event,
+  index,
+  onAlertDeleted,
+}: {
+  event: EmergencyTimelineEvent;
+  index: number;
+  onAlertDeleted: (alertId: string) => void;
+}) {
+  const styles = kindStyles(event.kind);
+  const showSosActions = event.kind === "sos_created" && event.alertId;
+
+  return (
+    <li
+      className={[
+        "relative min-w-0 pb-6 last:pb-0",
+        index === 0 ? "pt-0" : "",
+      ].join(" ")}
+    >
+      <span
+        className={[
+          "absolute -left-[calc(0.5rem+5px)] top-1.5 h-2.5 w-2.5 rounded-full border-2 sm:-left-[calc(0.75rem+5px)]",
+          styles.dot,
+        ].join(" ")}
+        aria-hidden
+      />
+      <div className="min-w-0 rounded-xl border border-border bg-background p-3 sm:p-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <span
+              className={[
+                "inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[11px] font-bold uppercase",
+                styles.badge,
+              ].join(" ")}
+            >
+              {styles.label}
+            </span>
+            <p className="text-sm font-semibold text-foreground">{event.title}</p>
+          </div>
+          <LocalRelativeTime
+            value={event.at}
+            className="shrink-0 text-xs text-muted sm:text-right"
+          />
+        </div>
+        {event.description ? (
+          <p className="mt-2 break-words text-sm text-muted">{event.description}</p>
+        ) : null}
+        {showSosActions ? (
+          <div className="mt-3">
+            <SOSAlertActions
+              alertId={event.alertId!}
+              mapsUrl={event.mapsUrl}
+              onDeleted={onAlertDeleted}
+            />
+          </div>
+        ) : null}
+      </div>
+    </li>
+  );
+});
+
 export function EmergencyActivityTimeline({ events: initialEvents }: Props) {
   const [events, setEvents] = useState(initialEvents);
 
-  function handleAlertDeleted(alertId: string) {
+  const handleAlertDeleted = useCallback((alertId: string) => {
     setEvents((current) => current.filter((event) => event.alertId !== alertId));
-  }
+  }, []);
 
   return (
     <DashboardCard className="mt-6 overflow-hidden">
@@ -107,59 +173,14 @@ export function EmergencyActivityTimeline({ events: initialEvents }: Props) {
         </div>
       ) : (
         <ol className="relative mt-6 space-y-0 border-l border-border pl-4 sm:pl-6">
-          {events.map((event, index) => {
-            const styles = kindStyles(event.kind);
-            const showSosActions = event.kind === "sos_created" && event.alertId;
-
-            return (
-              <li
-                key={event.id}
-                className={[
-                  "relative min-w-0 pb-6 last:pb-0",
-                  index === 0 ? "pt-0" : "",
-                ].join(" ")}
-              >
-                <span
-                  className={[
-                    "absolute -left-[calc(0.5rem+5px)] top-1.5 h-2.5 w-2.5 rounded-full border-2 sm:-left-[calc(0.75rem+5px)]",
-                    styles.dot,
-                  ].join(" ")}
-                  aria-hidden
-                />
-                <div className="min-w-0 rounded-xl border border-border bg-background p-3 sm:p-4">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-                    <div className="flex min-w-0 flex-wrap items-center gap-2">
-                      <span
-                        className={[
-                          "inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[11px] font-bold uppercase",
-                          styles.badge,
-                        ].join(" ")}
-                      >
-                        {styles.label}
-                      </span>
-                      <p className="text-sm font-semibold text-foreground">{event.title}</p>
-                    </div>
-                    <LocalRelativeTime
-                      value={event.at}
-                      className="shrink-0 text-xs text-muted sm:text-right"
-                    />
-                  </div>
-                  {event.description ? (
-                    <p className="mt-2 break-words text-sm text-muted">{event.description}</p>
-                  ) : null}
-                  {showSosActions ? (
-                    <div className="mt-3">
-                      <SOSAlertActions
-                        alertId={event.alertId!}
-                        mapsUrl={event.mapsUrl}
-                        onDeleted={handleAlertDeleted}
-                      />
-                    </div>
-                  ) : null}
-                </div>
-              </li>
-            );
-          })}
+          {events.map((event, index) => (
+            <TimelineEventRow
+              key={event.id}
+              event={event}
+              index={index}
+              onAlertDeleted={handleAlertDeleted}
+            />
+          ))}
         </ol>
       )}
     </DashboardCard>

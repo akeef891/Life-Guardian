@@ -28,3 +28,15 @@ export const EmergencyActivityTimelineLazy = dynamic(
     ),
   { loading: () => <DashboardPanelSkeleton className="h-96 rounded-2xl border border-border" /> },
 );
+
+export const IncidentReportDownloadLazy = dynamic(
+  () =>
+    import("@/components/dashboard/IncidentReportDownload").then(
+      (mod) => mod.IncidentReportDownload,
+    ),
+  {
+    loading: () => (
+      <span className="inline-flex min-h-11 min-w-[12rem] animate-pulse rounded-lg border border-border bg-surface" />
+    ),
+  },
+);

@@ -1,12 +1,30 @@
 "use client";
 
-import { useState } from "react";
+import dynamic from "next/dynamic";
+import { useCallback, useState } from "react";
 import { LocalDateTime } from "@/components/datetime/LocalDateTime";
-import { LocationPlaceDetails } from "@/components/geolocation/LocationPlaceDetails";
 import { LocationQualityBadge } from "@/components/geolocation/LocationQualityBadge";
-import { SOSAlertActions } from "@/components/sos/SOSAlertActions";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SOS_ESCALATION_STATUS } from "@/types/emergency-response";
+
+const LocationPlaceDetails = dynamic(
+  () =>
+    import("@/components/geolocation/LocationPlaceDetails").then(
+      (mod) => mod.LocationPlaceDetails,
+    ),
+  {
+    loading: () => (
+      <p className="rounded-lg border border-border bg-surface p-3 text-xs text-muted">
+        Loading place details…
+      </p>
+    ),
+  },
+);
+
+const SOSAlertActions = dynamic(
+  () => import("@/components/sos/SOSAlertActions").then((mod) => mod.SOSAlertActions),
+  { loading: () => null },
+);
 
 type SOSHistoryItem = {
   id: string;
@@ -31,9 +49,9 @@ type SOSHistoryListProps = {
 export function SOSHistoryList({ alerts: initialAlerts }: SOSHistoryListProps) {
   const [alerts, setAlerts] = useState(initialAlerts);
 
-  function handleDeleted(alertId: string) {
+  const handleDeleted = useCallback((alertId: string) => {
     setAlerts((current) => current.filter((alert) => alert.id !== alertId));
-  }
+  }, []);
 
   return (
     <section className="mt-6 min-w-0 overflow-hidden rounded-2xl border border-border bg-surface p-4 sm:mt-8 sm:p-6">

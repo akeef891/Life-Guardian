@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/PageHeader";
-import { SOSHistoryList } from "@/components/sos/SOSHistoryList";
+import { SOSHistoryListLazy } from "@/components/sos/sos-lazy";
 import { SOSTriggerPanel } from "@/components/sos/SOSTriggerPanel";
 import { getOrCreateCurrentUserWithProfile } from "@/lib/auth/user-context";
 import { prisma } from "@/lib/db/prisma";
@@ -44,7 +44,7 @@ export default async function SOSPage() {
 
       <div className="mx-auto w-full min-w-0 max-w-3xl overflow-x-hidden px-1 sm:px-0">
         <SOSTriggerPanel />
-        <SOSHistoryList alerts={alerts} />
+        <SOSHistoryListLazy alerts={alerts} />
       </div>
     </>
   );

@@ -11,7 +11,7 @@ import { EmergencyAnalyticsCards } from "@/components/dashboard/EmergencyAnalyti
 import { EmergencyReadinessScoreCard } from "@/components/dashboard/EmergencyReadinessScore";
 import { EmergencySmartRecommendations } from "@/components/dashboard/EmergencySmartRecommendations";
 import { EmergencyStatsCards } from "@/components/dashboard/EmergencyStatsCards";
-import { IncidentReportDownload } from "@/components/dashboard/IncidentReportDownload";
+import { IncidentReportDownloadLazy } from "@/components/dashboard/dashboard-lazy-panels";
 import { SOSLiveResponsePanel } from "@/components/dashboard/SOSLiveResponsePanel";
 import { TrustedCirclePanel } from "@/components/dashboard/TrustedCirclePanel";
 import { getOrCreateCurrentUserWithProfile } from "@/lib/auth/user-context";
@@ -178,7 +178,7 @@ export default async function DashboardPage() {
           <DashboardQuickActions />
           {latestAlertId ? (
             <div className="flex justify-start sm:justify-end">
-              <IncidentReportDownload alertId={latestAlertId} />
+              <IncidentReportDownloadLazy alertId={latestAlertId} />
             </div>
           ) : null}
         </div>
