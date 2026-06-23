@@ -4,12 +4,16 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from "react";
-import { getDictionary } from "@/lib/i18n/get-dictionary";
 import type { Dictionary } from "@/lib/i18n/dictionaries/en";
+import {
+  getInitialClientDictionary,
+  loadClientDictionary,
+} from "@/lib/i18n/client-dictionary";
 import {
   DEFAULT_LOCALE,
   LOCALE_COOKIE,
@@ -27,10 +31,36 @@ const LocaleContext = createContext<LocaleContextValue | null>(null);
 type LocaleProviderProps = {
   children: ReactNode;
   initialLocale?: Locale;
+  initialDictionary?: Dictionary;
 };
 
-export function LocaleProvider({ children, initialLocale = DEFAULT_LOCALE }: LocaleProviderProps) {
+export function LocaleProvider({
+  children,
+  initialLocale = DEFAULT_LOCALE,
+  initialDictionary,
+}: LocaleProviderProps) {
   const [locale, setLocaleState] = useState<Locale>(initialLocale);
+  const [dictionary, setDictionary] = useState<Dictionary>(() =>
+    getInitialClientDictionary(initialLocale, initialDictionary),
+  );
+
+  useEffect(() => {
+    if (locale === initialLocale && initialDictionary) {
+      return;
+    }
+
+    let cancelled = false;
+
+    void loadClientDictionary(locale).then((nextDictionary) => {
+      if (!cancelled) {
+        setDictionary(nextDictionary);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [locale, initialLocale, initialDictionary]);
 
   const setLocale = useCallback((next: Locale) => {
     setLocaleState(next);
@@ -41,10 +71,10 @@ export function LocaleProvider({ children, initialLocale = DEFAULT_LOCALE }: Loc
   const value = useMemo(
     () => ({
       locale,
-      dictionary: getDictionary(locale),
+      dictionary,
       setLocale,
     }),
-    [locale, setLocale],
+    [locale, dictionary, setLocale],
   );
 
   return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>;

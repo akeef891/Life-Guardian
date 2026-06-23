@@ -1,13 +1,22 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useId, useState } from "react";
 import { BrandLogoIcon } from "@/components/brand/BrandLogoIcon";
-import { InstallAppButton } from "@/components/pwa/InstallAppButton";
-import { MobileInstallBanner } from "@/components/pwa/MobileInstallBanner";
 import { APP_NAV_LINKS, MARKETING_NAV_LINKS, ROUTES } from "@/lib/constants/routes";
 import { cn } from "@/lib/utils/cn";
+
+const MobileInstallBanner = dynamic(
+  () => import("@/components/pwa/MobileInstallBanner").then((mod) => mod.MobileInstallBanner),
+  { ssr: false },
+);
+
+const InstallAppButton = dynamic(
+  () => import("@/components/pwa/InstallAppButton").then((mod) => mod.InstallAppButton),
+  { ssr: false },
+);
 
 type NavbarProps = {
   variant?: "marketing" | "app";

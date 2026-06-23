@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
 import { LocalDateTime } from "@/components/datetime/LocalDateTime";
@@ -21,7 +21,7 @@ type Props = {
   latestAlert: CommunityAlertDto | null;
 };
 
-function ResourceSnippet({
+const ResourceSnippet = memo(function ResourceSnippet({
   label,
   resource,
   loading,
@@ -70,7 +70,7 @@ function ResourceSnippet({
       </a>
     </div>
   );
-}
+});
 
 export function DashboardResourceCenter({
   latestCheckInStatus,
@@ -83,6 +83,8 @@ export function DashboardResourceCenter({
   const [loading, setLoading] = useState(false);
   const [unavailable, setUnavailable] = useState(false);
   const [locationDenied, setLocationDenied] = useState(false);
+  const [shouldLoadNearby, setShouldLoadNearby] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   const loadNearby = useCallback(async () => {
     if (!navigator.geolocation) {
@@ -106,11 +108,35 @@ export function DashboardResourceCenter({
   }, []);
 
   useEffect(() => {
+    const node = panelRef.current;
+    if (!node) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          setShouldLoadNearby(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "200px 0px" },
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!shouldLoadNearby) {
+      return;
+    }
     void loadNearby();
-  }, [loadNearby]);
+  }, [shouldLoadNearby, loadNearby]);
 
   const hospital: EmergencyResource | null = data?.hospitals[0] ?? null;
   const police: EmergencyResource | null = data?.police[0] ?? null;
+  const isLoadingPanel = !shouldLoadNearby || loading;
   const emptyHint = unavailable
     ? t.resources.unavailable
     : locationDenied
@@ -118,7 +144,8 @@ export function DashboardResourceCenter({
       : t.resources.locationHint;
 
   return (
-    <DashboardCard>
+    <div ref={panelRef}>
+      <DashboardCard>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <h2 className="text-lg font-semibold text-foreground">{t.dashboard.resourceCenter}</h2>
         <Link
@@ -145,13 +172,13 @@ export function DashboardResourceCenter({
         <ResourceSnippet
           label={t.dashboard.nearestHospital}
           resource={hospital}
-          loading={loading}
+          loading={isLoadingPanel}
           emptyHint={emptyHint}
         />
         <ResourceSnippet
           label={t.dashboard.nearestPolice}
           resource={police}
-          loading={loading}
+          loading={isLoadingPanel}
           emptyHint={emptyHint}
         />
       </div>
@@ -190,5 +217,6 @@ export function DashboardResourceCenter({
         </div>
       </div>
     </DashboardCard>
+    </div>
   );
 }

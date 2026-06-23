@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState, useEffect, useMemo, useState } from "react";
-import QRCode from "qrcode";
 import { generateQrTokenAction } from "@/app/(app)/qr-card/actions";
 import { GENERATE_QR_INITIAL_STATE } from "@/app/(app)/qr-card/types";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -35,11 +34,13 @@ export function QRCardPanel({ emergencyUrl, appBaseUrl }: QRCardPanelProps) {
       return;
     }
 
-    void QRCode.toDataURL(activeUrl, {
-      width: 320,
-      margin: 1,
-      errorCorrectionLevel: "M",
-    }).then(setQrDataUrl);
+    void import("qrcode").then(({ default: QRCode }) =>
+      QRCode.toDataURL(activeUrl, {
+        width: 320,
+        margin: 1,
+        errorCorrectionLevel: "M",
+      }).then(setQrDataUrl),
+    );
   }, [finalUrl]);
 
   function handleDownload() {

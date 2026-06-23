@@ -15,7 +15,6 @@ export function BrandLogoFull({ className }: BrandLogoFullProps) {
       height={BRAND_LOGO_FULL.height}
       className={cn("h-20 w-auto max-w-full object-contain object-left lg:h-24", className)}
       sizes="(min-width: 1024px) 96px, 80px"
-      quality={100}
       priority={false}
     />
   );

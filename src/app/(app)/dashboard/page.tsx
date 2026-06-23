@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import { PageHeader } from "@/components/PageHeader";
 import { CompletionTrackingPanel } from "@/components/dashboard/CompletionTrackingPanel";
 import { DashboardQuickActions } from "@/components/dashboard/DashboardQuickActions";
-import { EmergencyActivityTimeline } from "@/components/dashboard/EmergencyActivityTimeline";
+import {
+  CommunityAlertsPanelLazy,
+  DashboardResourceCenterLazy,
+  EmergencyActivityTimelineLazy,
+} from "@/components/dashboard/dashboard-lazy-panels";
 import { EmergencyAnalyticsCards } from "@/components/dashboard/EmergencyAnalyticsCards";
 import { EmergencyReadinessScoreCard } from "@/components/dashboard/EmergencyReadinessScore";
 import { EmergencySmartRecommendations } from "@/components/dashboard/EmergencySmartRecommendations";
@@ -10,8 +14,6 @@ import { EmergencyStatsCards } from "@/components/dashboard/EmergencyStatsCards"
 import { IncidentReportDownload } from "@/components/dashboard/IncidentReportDownload";
 import { SOSLiveResponsePanel } from "@/components/dashboard/SOSLiveResponsePanel";
 import { TrustedCirclePanel } from "@/components/dashboard/TrustedCirclePanel";
-import { DashboardResourceCenter } from "@/components/dashboard/DashboardResourceCenter";
-import { CommunityAlertsPanel } from "@/components/dashboard/CommunityAlertsPanel";
 import { getOrCreateCurrentUserWithProfile } from "@/lib/auth/user-context";
 import { prisma } from "@/lib/db/prisma";
 import { calculateEmergencyReadiness } from "@/lib/dashboard/calculate-emergency-readiness";
@@ -139,7 +141,7 @@ export default async function DashboardPage() {
         </div>
 
         <div className="mt-6">
-          <DashboardResourceCenter
+          <DashboardResourceCenterLazy
             latestCheckInStatus={(latestCheckIn?.status as SafetyCheckInStatus) ?? null}
             latestCheckInAt={latestCheckIn?.createdAt ?? null}
             latestAlert={communityAlerts[0] ?? null}
@@ -147,7 +149,7 @@ export default async function DashboardPage() {
         </div>
 
         <div className="mt-6">
-          <CommunityAlertsPanel alerts={communityAlerts} />
+          <CommunityAlertsPanelLazy alerts={communityAlerts} />
         </div>
 
         <div className="mt-6 grid gap-6 lg:grid-cols-2">
@@ -181,7 +183,7 @@ export default async function DashboardPage() {
           ) : null}
         </div>
 
-        <EmergencyActivityTimeline events={timelineEvents} />
+        <EmergencyActivityTimelineLazy events={timelineEvents} />
       </div>
     </div>
   );

@@ -21,7 +21,6 @@ export function BrandLogoIcon({
       height={BRAND_LOGO_ICON.height}
       className={cn("shrink-0 object-contain", className)}
       sizes={sizes}
-      quality={100}
       aria-hidden
       priority={priority}
     />
