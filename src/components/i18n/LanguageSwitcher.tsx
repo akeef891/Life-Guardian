@@ -165,8 +165,10 @@ export function LanguageSwitcher() {
         }}
         onKeyDown={handleTriggerKeyDown}
         className={cn(
-          "inline-flex min-h-11 w-full min-w-[9.5rem] items-center justify-between gap-2 rounded-xl border border-emerald-500/20 bg-slate-900 px-3 py-2 text-sm font-medium text-slate-100 shadow-sm shadow-black/20 backdrop-blur-md transition-[border-color,box-shadow] duration-200 ease-in-out",
-          "hover:border-emerald-500/35 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/30 sm:min-w-[10.5rem]",
+          "inline-flex min-h-11 w-full min-w-[9.5rem] items-center justify-between gap-2 rounded-xl border px-3 py-2 text-sm font-medium shadow-sm backdrop-blur-md transition-[border-color,background-color,box-shadow] duration-200 ease-in-out",
+          "border-slate-200 bg-white text-slate-900 hover:bg-slate-50",
+          "dark:border-emerald-500/20 dark:bg-slate-900 dark:text-white dark:shadow-black/20 dark:hover:border-emerald-500/35 dark:hover:bg-slate-800",
+          "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/30 sm:min-w-[10.5rem]",
         )}
       >
         <span className="truncate">
@@ -175,7 +177,7 @@ export function LanguageSwitcher() {
         </span>
         <ChevronIcon
           className={cn(
-            "h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 ease-in-out",
+            "h-4 w-4 shrink-0 text-slate-500 transition-transform duration-200 ease-in-out dark:text-slate-400",
             open && "rotate-180",
           )}
         />
@@ -188,7 +190,7 @@ export function LanguageSwitcher() {
         aria-labelledby={`${listboxId}-trigger`}
         aria-hidden={!open}
         className={cn(
-          "absolute right-0 top-[calc(100%+0.5rem)] z-50 w-full min-w-[12rem] max-w-[min(100vw-1.5rem,16rem)] origin-top-right rounded-xl border border-slate-700 bg-slate-900 p-1.5 shadow-2xl shadow-black/40 transition-[opacity,transform] duration-[180ms] ease-out sm:w-auto",
+          "absolute right-0 top-[calc(100%+0.5rem)] z-50 w-full min-w-[12rem] max-w-[min(100vw-1.5rem,16rem)] origin-top-right rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl transition-[opacity,transform] duration-[180ms] ease-out dark:border-slate-700 dark:bg-slate-900 dark:shadow-2xl dark:shadow-black/40 sm:w-auto",
           open
             ? "pointer-events-auto scale-100 opacity-100"
             : "pointer-events-none scale-95 opacity-0",
@@ -211,9 +213,11 @@ export function LanguageSwitcher() {
                 className={cn(
                   "flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm transition-colors duration-200 ease-in-out",
                   isSelected
-                    ? "bg-emerald-500/15 text-emerald-400"
-                    : "text-slate-100 hover:bg-emerald-500/10",
-                  !isSelected && highlightedIndex === index && "bg-emerald-500/10",
+                    ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400"
+                    : "text-slate-900 hover:bg-slate-50 dark:text-slate-100 dark:hover:bg-emerald-500/10",
+                  !isSelected &&
+                    highlightedIndex === index &&
+                    "bg-slate-50 dark:bg-emerald-500/10",
                 )}
               >
                 <span className="min-w-0 flex-1 truncate">
@@ -221,7 +225,7 @@ export function LanguageSwitcher() {
                   {ui.dropdownLabel}
                 </span>
                 {isSelected ? (
-                  <span className="shrink-0 text-emerald-400" aria-hidden>
+                  <span className="shrink-0 text-emerald-700 dark:text-emerald-400" aria-hidden>
                     ✓
                   </span>
                 ) : (
