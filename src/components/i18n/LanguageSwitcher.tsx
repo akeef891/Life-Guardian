@@ -48,15 +48,12 @@ export function LanguageSwitcher() {
   const selectLocale = useCallback(
     (next: Locale) => {
       setLocale(next);
+      setHighlightedIndex(LOCALES.indexOf(next));
       setOpen(false);
       triggerRef.current?.focus();
     },
     [setLocale],
   );
-
-  useEffect(() => {
-    setHighlightedIndex(selectedIndex);
-  }, [selectedIndex]);
 
   useEffect(() => {
     if (!open) {

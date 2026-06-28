@@ -30,17 +30,27 @@ export function QRCardPanel({ emergencyUrl, appBaseUrl }: QRCardPanelProps) {
   useEffect(() => {
     const activeUrl = finalUrl && finalUrl.length > 0 ? finalUrl : null;
     if (!activeUrl) {
-      setQrDataUrl(null);
+      queueMicrotask(() => setQrDataUrl(null));
       return;
     }
+
+    let cancelled = false;
 
     void import("qrcode").then(({ default: QRCode }) =>
       QRCode.toDataURL(activeUrl, {
         width: 320,
         margin: 1,
         errorCorrectionLevel: "M",
-      }).then(setQrDataUrl),
+      }).then((dataUrl) => {
+        if (!cancelled) {
+          setQrDataUrl(dataUrl);
+        }
+      }),
     );
+
+    return () => {
+      cancelled = true;
+    };
   }, [finalUrl]);
 
   function handleDownload() {
@@ -58,6 +68,8 @@ export function QRCardPanel({ emergencyUrl, appBaseUrl }: QRCardPanelProps) {
   return (
     <section className="flex w-full min-w-0 flex-col items-center overflow-hidden rounded-2xl border border-border bg-surface p-4 sm:p-8">
       {qrDataUrl ? (
+        // Dynamic QR data URL — next/image does not apply to client-generated canvas output.
+        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={qrDataUrl}
           alt="Emergency QR code"

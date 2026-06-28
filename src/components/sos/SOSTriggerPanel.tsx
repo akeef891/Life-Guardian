@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useRef, useState } from "react";
 import { triggerSOSAction } from "@/app/(app)/sos/actions";
 import { SOSConfirmationPanel } from "@/components/sos/SOSConfirmationPanel";
 import { useActionStateToast } from "@/components/ui/toast/useActionStateToast";
@@ -23,19 +23,13 @@ export function SOSTriggerPanel() {
     | "failed"
   >("idle");
   const formRef = useRef<HTMLFormElement>(null);
-  const [submitLocked, setSubmitLocked] = useState(false);
+  const submitInFlightRef = useRef(false);
   const latitudeRef = useRef<HTMLInputElement>(null);
   const longitudeRef = useRef<HTMLInputElement>(null);
   const accuracyRef = useRef<HTMLInputElement>(null);
   const capturedAtRef = useRef<HTMLInputElement>(null);
 
   useActionStateToast(state);
-
-  useEffect(() => {
-    if (!isPending) {
-      setSubmitLocked(false);
-    }
-  }, [isPending]);
 
   function setLocationValues(
     latitude: number | null,
@@ -68,27 +62,32 @@ export function SOSTriggerPanel() {
   }
 
   async function triggerSOSWithLocation() {
-    if (submitLocked || isPending || isLocating) {
+    if (submitInFlightRef.current || isPending || isLocating) {
       return;
     }
-    setSubmitLocked(true);
+
+    submitInFlightRef.current = true;
     setGeoStatus("getting-location");
 
-    const result = await getAccuratePosition();
+    try {
+      const result = await getAccuratePosition();
 
-    if (result.ok) {
-      setGeoStatus("idle");
-      submitWithLocation(
-        result.latitude,
-        result.longitude,
-        result.accuracy,
-        result.timestamp,
-      );
-      return;
+      if (result.ok) {
+        setGeoStatus("idle");
+        submitWithLocation(
+          result.latitude,
+          result.longitude,
+          result.accuracy,
+          result.timestamp,
+        );
+        return;
+      }
+
+      setGeoStatus(result.reason);
+      submitWithLocation(null, null, null, null);
+    } finally {
+      submitInFlightRef.current = false;
     }
-
-    setGeoStatus(result.reason);
-    submitWithLocation(null, null, null, null);
   }
 
   const isLocating = geoStatus === "getting-location";
@@ -166,7 +165,7 @@ export function SOSTriggerPanel() {
           <button
             type="button"
             onClick={triggerSOSWithLocation}
-            disabled={submitLocked || isPending || isLocating}
+            disabled={isPending || isLocating}
             aria-label="Trigger SOS alert with current location"
             className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-sos px-6 py-3 text-sm font-semibold uppercase tracking-wide text-white transition-colors hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-300 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
           >

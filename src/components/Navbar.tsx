@@ -72,7 +72,7 @@ export function Navbar({ variant = "marketing" }: NavbarProps) {
   const closeMenu = useCallback(() => setMenuOpen(false), []);
 
   useEffect(() => {
-    closeMenu();
+    queueMicrotask(() => closeMenu());
   }, [pathname, closeMenu]);
 
   useEffect(() => {

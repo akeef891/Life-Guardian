@@ -131,7 +131,10 @@ export function DashboardResourceCenter({
     if (!shouldLoadNearby) {
       return;
     }
-    void loadNearby();
+
+    queueMicrotask(() => {
+      void loadNearby();
+    });
   }, [shouldLoadNearby, loadNearby]);
 
   const hospital: EmergencyResource | null = data?.hospitals[0] ?? null;

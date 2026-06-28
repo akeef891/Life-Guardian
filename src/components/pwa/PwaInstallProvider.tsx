@@ -26,9 +26,18 @@ export function PwaInstallProvider({ children }: { children: ReactNode }) {
   const [canInstall, setCanInstall] = useState(false);
 
   useEffect(() => {
-    if (isStandaloneDisplayMode()) {
+    if (!isStandaloneDisplayMode()) {
+      return;
+    }
+
+    queueMicrotask(() => {
       setIsInstalled(true);
       setCanInstall(false);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (isStandaloneDisplayMode()) {
       return;
     }
 

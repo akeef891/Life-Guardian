@@ -9,8 +9,9 @@ import { generateQrToken } from "@/lib/utils/tokens";
 import type { GenerateQrState } from "./types";
 
 export async function generateQrTokenAction(
-  _prev: GenerateQrState,
+  _state: GenerateQrState,
 ): Promise<GenerateQrState> {
+  void _state;
   try {
     const { id, profile } = await getOrCreateCurrentUserWithProfile();
 
